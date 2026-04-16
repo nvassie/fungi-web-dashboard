@@ -1,15 +1,24 @@
-import { fileContentAtom, fileInfoAtom, loadingAtom } from "@/jotai";
 import type { FileInfo } from "@/types";
-import { useAtom } from "jotai";
-import { useEffect, useRef, useState } from "react";
-import { Button } from "../ui/button";
+import { useRef, useState } from "react";
+import { Button } from "./ui/button";
 import { Loader } from "lucide-react";
 
-export default function Upload() {
+interface UploadProps {
+  fileInfo: FileInfo;
+  setFileInfo: React.Dispatch<React.SetStateAction<FileInfo | undefined>>;
+  setFileContent: React.Dispatch<React.SetStateAction<string | undefined>>;
+  loading: boolean;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+export default function Upload({
+  fileInfo,
+  setFileInfo,
+  setFileContent,
+  loading,
+  setLoading,
+}: UploadProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [fileInfo, setFileInfo] = useAtom(fileInfoAtom);
-  const [fileContent, setFileContent] = useAtom(fileContentAtom);
-  const [loading, setLoading] = useAtom(loadingAtom);
 
   const inputRef = useRef(null);
 
@@ -30,6 +39,14 @@ export default function Upload() {
           extension,
           startTime,
           date,
+        };
+        setFileInfo(tempFileInfo);
+      } else if (extension === ".csv") {
+        const tempFileInfo: FileInfo = {
+          baseInfo: tempFile,
+          extension,
+          startTime: "1600",
+          date: "25-05-20",
         };
         setFileInfo(tempFileInfo);
       }

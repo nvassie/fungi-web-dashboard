@@ -6,14 +6,14 @@ import {
 } from "dockview";
 import "./styles.css";
 import "dockview/dist/styles/dockview.css";
-import Graph from "./components/panels/Graph";
+import GraphPanel from "./components/panels/GraphPanel";
 import TopBar from "./components/TopBar";
 import AddPanels from "./components/AddPanels";
 import TestPanel from "./components/panels/TestPanel";
 import UserSettingsPanel from "./components/panels/UserSettingsPanel";
 import GraphSettingsPanel from "./components/panels/GraphSettingsPanel";
 import { useEffect, useState } from "react";
-import Upload from "./components/panels/Upload";
+import Upload from "./components/Upload";
 import SpikePanel from "./components/panels/SpikePanel";
 
 const components = {
@@ -34,7 +34,7 @@ const components = {
       };
     }, [props.api]);
 
-    return <Graph props={props} width={panelWidth} height={panelHeight} />;
+    return <GraphPanel props={props} width={panelWidth} height={panelHeight} />;
   },
   graphsetting: () => {
     return <GraphSettingsPanel />;
