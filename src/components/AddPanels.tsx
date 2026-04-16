@@ -13,7 +13,6 @@ import {
   FlaskConical,
   Settings,
   FileChartLine,
-  FileUp,
   ChartLine,
 } from "lucide-react";
 import { useState } from "react";
@@ -59,10 +58,6 @@ export default function AddPanels({ props }: IDockviewHeaderActionsProps) {
           <Button onClick={() => onClick("home")}>
             <FlaskConical className="text-black" />
             <p className="text-black">Home Panel</p>
-          </Button>
-          <Button onClick={() => onClick("upload")}>
-            <FileUp className="text-black" />
-            <p className="text-black">Upload Data Panel</p>
           </Button>
           <Button onClick={() => onClick("spike")}>
             <ChartLine className="text-black" />

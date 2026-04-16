@@ -45,9 +45,6 @@ const components = {
   home: () => {
     return <TestPanel />;
   },
-  upload: () => {
-    return <Upload />;
-  },
   spike: () => {
     return <SpikePanel />;
   },
