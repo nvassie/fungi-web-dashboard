@@ -1,10 +1,9 @@
-// Chart.tsx
 import { useEffect, useRef, useState } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { Button } from "../ui/button";
 import { useAtom } from "jotai";
-import { graphIdsAtom } from "@/jotai";
+import { graphIdsAtom, spikeGroupsAtom } from "@/jotai";
 import type { IDockviewPanelProps } from "dockview";
 import Graph from "@/components/Graph";
 import { v4 as uuidv4 } from "uuid";
@@ -40,6 +39,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     "Pack 3 probe 2",
   ];
   const [graphIds, setGraphIds] = useAtom(graphIdsAtom);
+  const [spikeGroups, setSpikeGroups] = useAtom(spikeGroupsAtom);
 
   useEffect(() => {
     if (fileContent && fileInfo) {
@@ -99,9 +99,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   useEffect(() => {
     if (chartData[1] !== undefined && chartData[2] !== undefined) {
       const spikes1 = detectSpikesRolling(chartData[1], 2000, 2.5);
-      const filteredSpikes = chartData[1].filter((item, i) =>
-        spikes1.includes(i),
-      );
       const filtered1 = chartData[1].map((item, i) =>
         spikes1.includes(i) ? item : null,
       );
@@ -125,7 +122,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
           { label: "Pack 0 probe 1 Spikes", stroke: "orange", width: 5 },
         ],
       }));
-      const spikeGroups: number[][] = [];
+      const tempSpikeGroups: number[][] = [];
       let currentGroup: number[] = [];
       for (let i = 0; i < spikes1.length; i += 1) {
         if (i != 0) {
@@ -135,11 +132,20 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             }
             currentGroup.push(spikes1[i]);
           } else if (currentGroup.length !== 0) {
-            spikeGroups.push(currentGroup);
+            tempSpikeGroups.push(currentGroup);
             currentGroup = [];
           }
         }
       }
+      const spikeGroupValues = tempSpikeGroups.map((group) =>
+        group.map((idx) => chartData[1][idx]),
+      );
+      const temp = {
+        channel: "Pack 0 probe 2",
+        times: tempSpikeGroups,
+        values: spikeGroupValues,
+      };
+      setSpikeGroups((prev) => [...prev, temp]);
       setChartData([...chartData, filtered1, filtered2]);
     }
   }, [toggleSpikes]);

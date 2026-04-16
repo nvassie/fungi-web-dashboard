@@ -13,7 +13,6 @@ import TestPanel from "./components/panels/TestPanel";
 import UserSettingsPanel from "./components/panels/UserSettingsPanel";
 import GraphSettingsPanel from "./components/panels/GraphSettingsPanel";
 import { useEffect, useState } from "react";
-import Upload from "./components/Upload";
 import SpikePanel from "./components/panels/SpikePanel";
 
 const components = {

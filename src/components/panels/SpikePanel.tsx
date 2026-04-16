@@ -1,26 +1,27 @@
+import { spikeGroupsAtom } from "@/jotai";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { useAtomValue } from "jotai";
 
 type SpikeGroup = {
-  timeRange: string;
-  values: number[];
+  channel: string;
+  times: number[][];
+  values: number[][];
 };
-
-const data: SpikeGroup[] = [
-  { timeRange: "10-15", values: [23, 435, 6] },
-  { timeRange: "100-120", values: [233, 5, 34346, 12] },
-  { timeRange: "1000-1005", values: [233, 5] },
-];
 
 const columnHelper = createColumnHelper<SpikeGroup>();
 
 const columns = [
-  columnHelper.accessor("timeRange", {
-    header: "Time range",
+  columnHelper.accessor("channel", {
+    header: "Channel",
+    cell: (info) => info.getValue(),
+  }),
+  columnHelper.accessor("times", {
+    header: "Times",
     cell: (info) => info.getValue(),
   }),
   columnHelper.accessor("values", {
@@ -30,8 +31,10 @@ const columns = [
 ];
 
 function SpikePanel() {
+  const spikeGroups = useAtomValue(spikeGroupsAtom);
+
   const table = useReactTable({
-    data,
+    data: spikeGroups,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
