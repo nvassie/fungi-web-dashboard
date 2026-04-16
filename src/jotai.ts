@@ -7,5 +7,7 @@ export const spikeGroupsAtom = atom<
     channel: string;
     times: number[][];
     values: number[][];
+    durations: number[];
+    startTimes: number[];
   }[]
 >([]);

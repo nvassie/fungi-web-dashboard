@@ -11,6 +11,7 @@ import type { FileInfo } from "@/types";
 import Upload from "@/components/Upload";
 import { parser } from "@/lib/parsers";
 import { detectSpikesRolling } from "@/lib/spikes";
+import { toUnixTimestamp } from "@/lib/time";
 
 interface GraphProps {
   props: IDockviewPanelProps;
@@ -123,6 +124,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
         ],
       }));
       const tempSpikeGroups: number[][] = [];
+      const tempSpikeGroupsDurations: number[] = [];
+      const tempSpikeGroupsStartTimes: number[] = [];
       let currentGroup: number[] = [];
       for (let i = 0; i < spikes1.length; i += 1) {
         if (i != 0) {
@@ -133,6 +136,11 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             currentGroup.push(spikes1[i]);
           } else if (currentGroup.length !== 0) {
             tempSpikeGroups.push(currentGroup);
+            tempSpikeGroupsDurations.push(currentGroup.length * 0.022);
+            tempSpikeGroupsStartTimes.push(
+              toUnixTimestamp(fileInfo?.date, fileInfo?.startTime) +
+                currentGroup[0] * 0.022,
+            );
             currentGroup = [];
           }
         }
@@ -144,6 +152,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
         channel: "Pack 0 probe 2",
         times: tempSpikeGroups,
         values: spikeGroupValues,
+        durations: tempSpikeGroupsDurations,
+        startTimes: tempSpikeGroupsStartTimes,
       };
       setSpikeGroups((prev) => [...prev, temp]);
       setChartData([...chartData, filtered1, filtered2]);
