@@ -14,6 +14,7 @@ import UserSettingsPanel from "./components/panels/UserSettingsPanel";
 import GraphSettingsPanel from "./components/panels/GraphSettingsPanel";
 import { useEffect, useState } from "react";
 import Upload from "./components/panels/Upload";
+import SpikePanel from "./components/panels/SpikePanel";
 
 const components = {
   default: (props: IDockviewPanelProps) => {
@@ -46,6 +47,9 @@ const components = {
   },
   upload: () => {
     return <Upload />;
+  },
+  spike: () => {
+    return <SpikePanel />;
   },
 };
 

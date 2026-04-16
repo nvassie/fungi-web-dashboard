@@ -137,6 +137,9 @@ export default function Graph({ props, width, height }: GraphProps) {
   useEffect(() => {
     if (chartData[1] !== undefined && chartData[2] !== undefined) {
       const spikes1 = detectSpikesRolling(chartData[1], 2000, 2.5);
+      const filteredSpikes = chartData[1].filter((item, i) =>
+        spikes1.includes(i),
+      );
       const filtered1 = chartData[1].map((item, i) =>
         spikes1.includes(i) ? item : null,
       );
@@ -160,6 +163,21 @@ export default function Graph({ props, width, height }: GraphProps) {
           { label: "Pack 0 probe 1 Spikes", stroke: "orange", width: 5 },
         ],
       }));
+      const spikeGroups: number[][] = [];
+      let currentGroup: number[] = [];
+      for (let i = 0; i < spikes1.length; i += 1) {
+        if (i != 0) {
+          if (spikes1[i] === spikes1[i - 1] + 1) {
+            if (currentGroup.length === 0) {
+              currentGroup.push(spikes1[i - 1]);
+            }
+            currentGroup.push(spikes1[i]);
+          } else if (currentGroup.length !== 0) {
+            spikeGroups.push(currentGroup);
+            currentGroup = [];
+          }
+        }
+      }
       setChartData([...chartData, filtered1, filtered2]);
     }
   }, [toggleSpikes]);
