@@ -125,7 +125,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
       }));
       const tempSpikeGroups: number[][] = [];
       const tempSpikeGroupsDurations: number[] = [];
-      const tempSpikeGroupsStartTimes: number[] = [];
+      const tempSpikeGroupsStartTimes: string[] = [];
       let currentGroup: number[] = [];
       for (let i = 0; i < spikes1.length; i += 1) {
         if (i != 0) {
@@ -138,13 +138,21 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             tempSpikeGroups.push(currentGroup);
             tempSpikeGroupsDurations.push(currentGroup.length * 0.022);
             tempSpikeGroupsStartTimes.push(
-              toUnixTimestamp(fileInfo?.date, fileInfo?.startTime) +
-                currentGroup[0] * 0.022,
+              new Date(
+                (toUnixTimestamp(fileInfo?.date, fileInfo?.startTime) +
+                  currentGroup[0] * 0.022) *
+                  1000,
+              ).toLocaleTimeString(),
             );
             currentGroup = [];
           }
         }
       }
+      new Date(
+        (toUnixTimestamp(fileInfo?.date, fileInfo?.startTime) +
+          currentGroup[0] * 0.022) *
+          1000,
+      ).toLocaleTimeString();
       const spikeGroupValues = tempSpikeGroups.map((group) =>
         group.map((idx) => chartData[1][idx]),
       );

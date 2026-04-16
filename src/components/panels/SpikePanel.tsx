@@ -12,7 +12,7 @@ type SpikeGroup = {
   times: number[][];
   values: number[][];
   durations: number[];
-  startTimes: number[];
+  startTimes: string[];
 };
 
 type SpikeRow = {
@@ -20,7 +20,7 @@ type SpikeRow = {
   times: number[];
   values: number[];
   duration: number;
-  startTime: number;
+  startTime: string;
 };
 
 const columnHelper = createColumnHelper<SpikeRow>();

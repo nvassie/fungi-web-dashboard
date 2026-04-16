@@ -8,6 +8,6 @@ export const spikeGroupsAtom = atom<
     times: number[][];
     values: number[][];
     durations: number[];
-    startTimes: number[];
+    startTimes: string[];
   }[]
 >([]);
