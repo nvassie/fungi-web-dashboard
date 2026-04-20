@@ -12,8 +12,10 @@ import AddPanels from "./components/AddPanels";
 import TestPanel from "./components/panels/TestPanel";
 import UserSettingsPanel from "./components/panels/UserSettingsPanel";
 import GraphSettingsPanel from "./components/panels/GraphSettingsPanel";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SpikePanel from "./components/panels/SpikePanel";
+import { DevTools } from "jotai-devtools";
+import "jotai-devtools/styles.css";
 
 const components = {
   default: (props: IDockviewPanelProps) => {
@@ -58,27 +60,45 @@ const LeftComponent = (props: IDockviewHeaderActionsProps) => {
 };
 
 export default function App() {
-  const onReady = (event: DockviewReadyEvent) => {
-    event.api.addPanel({
-      id: "Home",
-      component: "home",
-    });
+  const dockviewRef = useRef<any>(null);
 
-    event.api.addPanel({
-      id: "Graph",
-      component: "Graph",
-    });
+  const onReady = (event: DockviewReadyEvent) => {
+    dockviewRef.current = event.api;
+
+    const saved = localStorage.getItem("layout");
+
+    if (saved) {
+      dockviewRef.current.fromJSON(JSON.parse(saved));
+    } else {
+      event.api.addPanel({
+        id: "Home",
+        component: "home",
+      });
+
+      event.api.addPanel({
+        id: "Graph",
+        component: "Graph",
+      });
+    }
+  };
+
+  const saveLayout = () => {
+    const currentLayout = dockviewRef.current.toJSON();
+    localStorage.setItem("layout", JSON.stringify(currentLayout));
   };
 
   return (
-    <div className="App overflow-y-hidden">
-      <TopBar />
-      <DockviewReact
-        className="dockview-theme-dark"
-        onReady={onReady}
-        components={components}
-        leftHeaderActionsComponent={LeftComponent}
-      />
-    </div>
+    <>
+      <DevTools />
+      <div className="App overflow-y-hidden">
+        <TopBar saveLayout={saveLayout} />
+        <DockviewReact
+          className="dockview-theme-dark"
+          onReady={onReady}
+          components={components}
+          leftHeaderActionsComponent={LeftComponent}
+        />
+      </div>
+    </>
   );
 }

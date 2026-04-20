@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 
 export const graphIdsAtom = atom<string[]>([]);
 
@@ -11,3 +12,5 @@ export const spikeGroupsAtom = atom<
     startTimes: string[];
   }[]
 >([]);
+
+export const userSpikeFunctionsAtom = atomWithStorage("functions", []);

@@ -32,7 +32,7 @@ const columns = [
   }),
   columnHelper.accessor("duration", {
     header: "Durations",
-    cell: (info) => info.getValue(),
+    cell: (info) => info.getValue().toFixed(3),
   }),
   columnHelper.accessor("startTime", {
     header: "Start Times",

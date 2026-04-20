@@ -197,7 +197,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
               onClick={() => {
                 setToggleSpikes(true);
               }}
-              className="text-black"
+              className="text-black mr-3"
             >
               Detect Spikes
             </Button>
