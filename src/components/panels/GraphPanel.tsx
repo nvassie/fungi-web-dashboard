@@ -3,7 +3,7 @@ import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { Button } from "../ui/button";
 import { useAtom } from "jotai";
-import { graphIdsAtom, spikeGroupsAtom } from "@/jotai";
+import { graphIdsAtom, spikeGroupsAtom, userSpikeFunctionsAtom } from "@/jotai";
 import type { IDockviewPanelProps } from "dockview";
 import Graph from "@/components/Graph";
 import { v4 as uuidv4 } from "uuid";
@@ -12,6 +12,16 @@ import Upload from "@/components/Upload";
 import { parser } from "@/lib/parsers";
 import { detectSpikesRolling } from "@/lib/spikes";
 import { toUnixTimestamp } from "@/lib/time";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { wrap } from "comlink";
 
 interface GraphProps {
   props: IDockviewPanelProps;
@@ -41,6 +51,24 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   ];
   const [graphIds, setGraphIds] = useAtom(graphIdsAtom);
   const [spikeGroups, setSpikeGroups] = useAtom(spikeGroupsAtom);
+  const [userSpikeFunctions, setSpikeUserFunctions] = useAtom(
+    userSpikeFunctionsAtom,
+  );
+  const [detectionFunction, setDetectionFunction] = useState<string>("default");
+  const codeworker = new Worker(
+    new URL("../../workers/userSpikeFunctionWorker.ts", import.meta.url),
+    {
+      type: "module",
+    },
+  );
+  const codeRunner = wrap(codeworker);
+  const spikeWorker = new Worker(
+    new URL("../../workers/spikeGroupWorker.ts", import.meta.url),
+    {
+      type: "module",
+    },
+  );
+  const spikeRunner = wrap(spikeWorker);
 
   useEffect(() => {
     if (fileContent && fileInfo) {
@@ -98,73 +126,57 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   ]);
 
   useEffect(() => {
-    if (chartData[1] !== undefined && chartData[2] !== undefined) {
-      const spikes1 = detectSpikesRolling(chartData[1], 2000, 2.5);
-      const filtered1 = chartData[1].map((item, i) =>
-        spikes1.includes(i) ? item : null,
-      );
-      const spikes2 = detectSpikesRolling(chartData[2], 2000, 2.5);
-      const filtered2 = chartData[2].map((item, i) =>
-        spikes2.includes(i) ? item : null,
-      );
-      setGraphProps((prev) => ({
-        ...prev,
-        series: [
-          {},
-          { label: "Pack 0 probe 2", stroke: "white", width: 2 },
-          { label: "Pack 0 probe 1", stroke: "white", width: 2 },
-          { label: "Pack 1 probe 1", stroke: "blue", width: 2 },
-          { label: "Pack 1 probe 2", stroke: "blue", width: 2 },
-          { label: "Pack 2 probe 1", stroke: "green", width: 2 },
-          { label: "Pack 2 probe 2", stroke: "green", width: 2 },
-          { label: "Pack 3 probe 1", stroke: "red", width: 2 },
-          { label: "Pack 3 probe 2", stroke: "red", width: 2 },
-          { label: "Pack 0 probe 2 Spikes", stroke: "orange", width: 5 },
-          { label: "Pack 0 probe 1 Spikes", stroke: "orange", width: 5 },
-        ],
-      }));
-      const tempSpikeGroups: number[][] = [];
-      const tempSpikeGroupsDurations: number[] = [];
-      const tempSpikeGroupsStartTimes: string[] = [];
-      let currentGroup: number[] = [];
-      for (let i = 0; i < spikes1.length; i += 1) {
-        if (i != 0) {
-          if (spikes1[i] === spikes1[i - 1] + 1) {
-            if (currentGroup.length === 0) {
-              currentGroup.push(spikes1[i - 1]);
-            }
-            currentGroup.push(spikes1[i]);
-          } else if (currentGroup.length !== 0) {
-            tempSpikeGroups.push(currentGroup);
-            tempSpikeGroupsDurations.push(currentGroup.length * 0.022);
-            tempSpikeGroupsStartTimes.push(
-              new Date(
-                (toUnixTimestamp(fileInfo?.date, fileInfo?.startTime) +
-                  currentGroup[0] * 0.022) *
-                  1000,
-              ).toLocaleTimeString(),
+    if (toggleSpikes) {
+      const detectSpikes = async () => {
+        const spikesArray: number[][] = [];
+        const filteredArray: number[][] = [];
+        for (let i = 1; i < chartData.length; i++) {
+          if (chartData[i].length > 0) {
+            const workerResult = await userCode(
+              detectionFunction,
+              chartData[i],
             );
-            currentGroup = [];
+            spikesArray.push(workerResult.spike);
+            filteredArray.push(workerResult.filtered);
           }
         }
-      }
-      new Date(
-        (toUnixTimestamp(fileInfo?.date, fileInfo?.startTime) +
-          currentGroup[0] * 0.022) *
-          1000,
-      ).toLocaleTimeString();
-      const spikeGroupValues = tempSpikeGroups.map((group) =>
-        group.map((idx) => chartData[1][idx]),
-      );
-      const temp = {
-        channel: "Pack 0 probe 2",
-        times: tempSpikeGroups,
-        values: spikeGroupValues,
-        durations: tempSpikeGroupsDurations,
-        startTimes: tempSpikeGroupsStartTimes,
+        for (let j = 0; j < spikesArray.length; j++) {
+          if (spikesArray[j].length > 0) {
+            const workerResult = await spikeRunner.groupSpikes(
+              String(j),
+              spikesArray[j],
+              chartData[j + 1],
+              fileInfo,
+            );
+            setSpikeGroups((prev) => [...prev, workerResult]);
+          }
+        }
+        setGraphProps((prev) => ({
+          ...prev,
+          series: [
+            {},
+            { label: "Pack 0 probe 1", stroke: "white", width: 2 },
+            { label: "Pack 0 probe 2", stroke: "white", width: 2 },
+            { label: "Pack 1 probe 1", stroke: "blue", width: 2 },
+            { label: "Pack 1 probe 2", stroke: "blue", width: 2 },
+            { label: "Pack 2 probe 1", stroke: "green", width: 2 },
+            { label: "Pack 2 probe 2", stroke: "green", width: 2 },
+            { label: "Pack 3 probe 1", stroke: "red", width: 2 },
+            { label: "Pack 3 probe 2", stroke: "red", width: 2 },
+            { label: "Pack 0 probe 1 Spikes", stroke: "orange", width: 5 },
+            { label: "Pack 0 probe 2 Spikes", stroke: "orange", width: 5 },
+            { label: "Pack 1 probe 1 Spikes", stroke: "orange", width: 5 },
+            { label: "Pack 1 probe 2 Spikes", stroke: "orange", width: 5 },
+            { label: "Pack 2 probe 1 Spikes", stroke: "orange", width: 5 },
+            { label: "Pack 2 probe 2 Spikes", stroke: "orange", width: 5 },
+            { label: "Pack 3 probe 1 Spikes", stroke: "orange", width: 5 },
+            { label: "Pack 3 probe 2 Spikes", stroke: "orange", width: 5 },
+          ],
+        }));
+        setChartData([...chartData, ...filteredArray]);
       };
-      setSpikeGroups((prev) => [...prev, temp]);
-      setChartData([...chartData, filtered1, filtered2]);
+
+      detectSpikes();
     }
   }, [toggleSpikes]);
 
@@ -187,28 +199,59 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     plotRef.current?.setSize(temp);
   }, [width, height]);
 
+  async function userCode(functionName: string, input: number[]) {
+    try {
+      const code = userSpikeFunctions.find(
+        (func) => func.name === functionName,
+      ).code;
+      const output = await codeRunner.runCode(code, input);
+      return output;
+    } catch (error) {
+      console.log(error);
+      return [];
+    }
+  }
+
   return (
     <div className="h-full min-h-0 overflow-auto">
       {chartData.length > 0 ? (
         <div>
           <div>
             <div className="text-white" ref={chartRef} />
-            <Button
-              onClick={() => {
-                setToggleSpikes(true);
-              }}
-              className="text-black mr-3"
-            >
-              Detect Spikes
-            </Button>
-            <Button
-              onClick={() => {
-                setGraphIds((prev) => [...prev, uuidv4()]);
-              }}
-              className="text-black"
-            >
-              Add graph
-            </Button>
+            <div className="flex gap-3 justify-center mt-3">
+              <Select
+                value={detectionFunction}
+                onValueChange={setDetectionFunction}
+              >
+                <SelectTrigger className="w-full max-w-48">
+                  <SelectValue placeholder="Select function" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Spike Detection Functions</SelectLabel>
+                    {userSpikeFunctions.map((func) => (
+                      <SelectItem value={func.name}>{func.name}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() => {
+                  setToggleSpikes((prev) => !prev);
+                }}
+                className="text-black"
+              >
+                Detect Spikes
+              </Button>
+              <Button
+                onClick={() => {
+                  setGraphIds((prev) => [...prev, uuidv4()]);
+                }}
+                className="text-black"
+              >
+                Add graph
+              </Button>
+            </div>
           </div>
           {graphIds.map((id) => (
             <Graph key={id} width={width} height={height} />

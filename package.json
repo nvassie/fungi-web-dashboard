@@ -17,6 +17,7 @@
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "comlink": "^4.4.2",
     "dockview": "^4.9.0",
     "jotai": "^2.18.0",
     "jotai-devtools": "^0.13.1",

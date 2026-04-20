@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "../ui/label";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -12,36 +13,75 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { userSpikeFunctionsAtom } from "@/jotai";
 import { useAtom } from "jotai";
+import { Input } from "../ui/input";
+import { X } from "lucide-react";
 
 export default function UserSettingsPanel() {
   const [addFunctionCode, setAddFunctionCode] = useState<string>("");
+  const [addFunctionName, setAddFunctionName] = useState<string>("");
   const [userSpikeFunctions, setSpikeUserFunctions] = useAtom(
     userSpikeFunctionsAtom,
   );
 
   return (
-    <div className="flex-col space-y-2">
+    <div className="flex flex-col">
       <Card className="m-5 bg-gray-300">
         <CardHeader>
           <CardTitle>Spike Detection</CardTitle>
         </CardHeader>
-        <CardContent className="flex-col">
-          <Label>Functions</Label>
-          {userSpikeFunctions.map((func) => (
-            <pre>{`function detectSpikes(data) {\n  ${func}\n}`}</pre>
-          ))}
+        <CardContent>
+          <div>
+            <p>Functions</p>
+            {userSpikeFunctions.map((func) => (
+              <div className="flex items-center justify-between">
+                <p>{func.name}</p>
+                {func.name !== "default" && (
+                  <Dialog>
+                    <DialogTrigger>
+                      <X className="h-4 w-4" />
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Remove {func.name}</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex justify-end">
+                        <Button
+                          className="text-black"
+                          onClick={() =>
+                            setSpikeUserFunctions((prev) =>
+                              prev.filter(
+                                (prevFns) => prevFns.name !== func.name,
+                              ),
+                            )
+                          }
+                        >
+                          Confirm
+                        </Button>
+                        <DialogClose>Cancel</DialogClose>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            ))}
+          </div>
           <Dialog>
             <DialogTrigger>Add Function</DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Function</DialogTitle>
               </DialogHeader>
-              <p>
+              <pre>
                 {`function detectSpikes(data) {
                   YOUR CODE
-                  return spikes
                 }`}
-              </p>
+              </pre>
+              <Label>Function name:</Label>
+              <Input
+                value={addFunctionName}
+                onChange={(e) => setAddFunctionName(e.target.value)}
+              />
+              <Label>Function code:</Label>
               <Textarea
                 value={addFunctionCode}
                 onChange={(e) => setAddFunctionCode(e.target.value)}
@@ -49,8 +89,12 @@ export default function UserSettingsPanel() {
               <Button
                 className="text-black"
                 onClick={() => {
-                  setSpikeUserFunctions((prev) => [...prev, addFunctionCode]);
+                  setSpikeUserFunctions((prev) => [
+                    ...prev,
+                    { name: addFunctionName, code: addFunctionCode },
+                  ]);
                   setAddFunctionCode("");
+                  setAddFunctionName("");
                 }}
               >
                 Save Code

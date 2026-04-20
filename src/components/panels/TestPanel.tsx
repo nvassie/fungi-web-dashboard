@@ -1,18 +1,25 @@
-import { useUserCodeRunner } from "@/components/UserFunctionRunner";
 import { Button } from "../ui/button";
+import { Label } from "../ui/label";
+import { wrap } from "comlink";
 
 export default function TestPanel() {
-  const { runUserCode, RunnerFrame } = useUserCodeRunner();
+  const worker = new Worker(
+    new URL("../../workers/userSpikeFunctionWorker.ts", import.meta.url),
+    {
+      type: "module",
+    },
+  );
+  const runner = wrap(worker);
 
   async function test() {
     try {
-      const output = await runUserCode({
-        code: `
-    const sum = input.a + input.b;
+      const output = await runner.runCode(
+        `
+    const sum = input[0] + input[1];
     return sum;
   `,
-        input: { a: 2, b: 3 },
-      });
+        [2, 5],
+      );
       console.log(output);
     } catch (error) {
       console.log(error);
@@ -21,8 +28,10 @@ export default function TestPanel() {
 
   return (
     <div>
-      {RunnerFrame}
       <p className="text-white">Home Panel</p>
+      <Label className="text-white" htmlFor="test">
+        Home Panel
+      </Label>
       <Button className="text-black" onClick={() => test()}>
         Click
       </Button>
