@@ -28,7 +28,7 @@ function Graph({ width, height }: GraphProps) {
       setLoading(false);
 
       setGraphProps({
-        width: width,
+        width: width - 10,
         height: height * 0.6,
         series: [{}, { label: "Humidity %", stroke: "white", width: 2 }],
         axes: [
@@ -71,14 +71,14 @@ function Graph({ width, height }: GraphProps) {
 
   useEffect(() => {
     const temp = {
-      width: width,
+      width: width - 10,
       height: height * 0.6,
     };
     plotRef.current?.setSize(temp);
   }, [width, height]);
 
   return (
-    <div>
+    <div className="mb-3">
       {chartData.length > 0 ? (
         <div className="text-white" ref={chartRef} />
       ) : (

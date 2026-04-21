@@ -60,18 +60,21 @@ export default function UserSettingsPanel() {
                         <div className="flex justify-end">
                           <Button
                             className="text-black"
-                            onClick={() =>
+                            onClick={() => {
                               setSpikeUserFunctions((prev) => [
                                 ...prev.filter(
                                   (prevFuncs) => prevFuncs.name !== func.name,
                                 ),
                                 { name: func.name, code: editCode },
-                              ])
-                            }
+                              ]);
+                              setEditCode("");
+                            }}
                           >
                             Confirm
                           </Button>
-                          <DialogClose>Cancel</DialogClose>
+                          <DialogClose asChild>
+                            <Button className="text-black">Cancel</Button>
+                          </DialogClose>
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -98,7 +101,9 @@ export default function UserSettingsPanel() {
                           >
                             Confirm
                           </Button>
-                          <DialogClose>Cancel</DialogClose>
+                          <DialogClose asChild>
+                            <Button className="text-black">Cancel</Button>
+                          </DialogClose>
                         </div>
                       </DialogContent>
                     </Dialog>

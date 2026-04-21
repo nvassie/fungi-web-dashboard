@@ -78,7 +78,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
       setLoading(false);
 
       setGraphProps({
-        width: props.api.width,
+        width: props.api.width - 10,
         height: props.api.height * 0.6,
         series: [
           {},
@@ -193,7 +193,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
 
   useEffect(() => {
     const temp = {
-      width: width,
+      width: width - 10,
       height: height * 0.6,
     };
     plotRef.current?.setSize(temp);
@@ -213,7 +213,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   }
 
   return (
-    <div className="h-full min-h-0 overflow-auto">
+    <div className="h-[calc(100%-55px)] min-h-0 overflow-y-auto overflow-x-hidden">
       {chartData.length > 0 ? (
         <div>
           <div>
@@ -250,6 +250,23 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                 className="text-black"
               >
                 Add graph
+              </Button>
+              <Button
+                onClick={() => {
+                  setChartData([]);
+                  setGraphProps({});
+                  setFileContent();
+                  setFileInfo();
+                  setToggleSpikes(false);
+                  setDetectionFunction("default");
+                  setLoading(false);
+                  setGraphIds([]);
+                  chartRef.current = null;
+                  plotRef.current = null;
+                }}
+                className="text-black"
+              >
+                Clear Data
               </Button>
             </div>
           </div>
