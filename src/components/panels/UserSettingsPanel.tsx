@@ -27,7 +27,7 @@ export default function UserSettingsPanel() {
 
   return (
     <div className="flex flex-col">
-      <Card className="m-5 bg-gray-300">
+      <Card className="m-5 bg-gray-100">
         <CardHeader>
           <CardTitle>Spike Detection</CardTitle>
         </CardHeader>
@@ -113,7 +113,9 @@ export default function UserSettingsPanel() {
             ))}
           </div>
           <Dialog>
-            <DialogTrigger>Add Function</DialogTrigger>
+            <DialogTrigger asChild>
+              <Button className="text-black">Add Function</Button>
+            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Function</DialogTitle>
@@ -157,7 +159,7 @@ export default function UserSettingsPanel() {
           </Dialog>
         </CardContent>
       </Card>
-      <Card className="m-5 bg-gray-300">
+      {/* <Card className="m-5 bg-gray-300">
         <CardHeader>
           <CardTitle>Other</CardTitle>
         </CardHeader>
@@ -168,7 +170,7 @@ export default function UserSettingsPanel() {
           <CardTitle>User</CardTitle>
         </CardHeader>
         <CardContent></CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }

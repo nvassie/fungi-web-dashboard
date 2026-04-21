@@ -143,7 +143,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
         for (let j = 0; j < spikesArray.length; j++) {
           if (spikesArray[j].length > 0) {
             const workerResult = await spikeRunner.groupSpikes(
-              String(j),
+              headers[j + 1],
               spikesArray[j],
               chartData[j + 1],
               fileInfo,
