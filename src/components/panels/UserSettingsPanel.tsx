@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -14,7 +15,7 @@ import { Button } from "../ui/button";
 import { userSpikeFunctionsAtom } from "@/jotai";
 import { useAtom } from "jotai";
 import { Input } from "../ui/input";
-import { X } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 
 export default function UserSettingsPanel() {
   const [addFunctionCode, setAddFunctionCode] = useState<string>("");
@@ -22,6 +23,7 @@ export default function UserSettingsPanel() {
   const [userSpikeFunctions, setSpikeUserFunctions] = useAtom(
     userSpikeFunctionsAtom,
   );
+  const [editCode, setEditCode] = useState<string>("");
 
   return (
     <div className="flex flex-col">
@@ -35,33 +37,73 @@ export default function UserSettingsPanel() {
             {userSpikeFunctions.map((func) => (
               <div className="flex items-center justify-between">
                 <p>{func.name}</p>
-                {func.name !== "default" && (
-                  <Dialog>
-                    <DialogTrigger>
-                      <X className="h-4 w-4" />
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Remove {func.name}</DialogTitle>
-                      </DialogHeader>
-                      <div className="flex justify-end">
-                        <Button
-                          className="text-black"
-                          onClick={() =>
-                            setSpikeUserFunctions((prev) =>
-                              prev.filter(
-                                (prevFns) => prevFns.name !== func.name,
-                              ),
-                            )
-                          }
-                        >
-                          Confirm
-                        </Button>
-                        <DialogClose>Cancel</DialogClose>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
+                <div className="flex gap-2">
+                  {func.name !== "default" && (
+                    <Dialog>
+                      <DialogTrigger
+                        asChild
+                        onClick={() => setEditCode(func.code)}
+                      >
+                        <Pencil className="h-5 w-5" />
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit {func.name}</DialogTitle>
+                          <DialogDescription>
+                            Change function code.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <Textarea
+                          value={editCode}
+                          onChange={(e) => setEditCode(e.target.value)}
+                        />
+                        <div className="flex justify-end">
+                          <Button
+                            className="text-black"
+                            onClick={() =>
+                              setSpikeUserFunctions((prev) => [
+                                ...prev.filter(
+                                  (prevFuncs) => prevFuncs.name !== func.name,
+                                ),
+                                { name: func.name, code: editCode },
+                              ])
+                            }
+                          >
+                            Confirm
+                          </Button>
+                          <DialogClose>Cancel</DialogClose>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                  {func.name !== "default" && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <X className="h-5 w-5" />
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Remove {func.name}</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex justify-end">
+                          <Button
+                            className="text-black"
+                            onClick={() =>
+                              setSpikeUserFunctions((prev) =>
+                                prev.filter(
+                                  (prevFns) => prevFns.name !== func.name,
+                                ),
+                              )
+                            }
+                          >
+                            Confirm
+                          </Button>
+                          <DialogClose>Cancel</DialogClose>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -70,9 +112,16 @@ export default function UserSettingsPanel() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Function</DialogTitle>
+                <DialogDescription>
+                  Your spike detecting function must return the indices of the
+                  values of input (all the graph data) that are determined to be
+                  part of a spike in an array. The rest of the processing will
+                  be handled by the dashboard.
+                </DialogDescription>
               </DialogHeader>
+              <Label>Function format:</Label>
               <pre>
-                {`function detectSpikes(data) {
+                {`function FUNCTION NAME(input) {
                   YOUR CODE
                 }`}
               </pre>
