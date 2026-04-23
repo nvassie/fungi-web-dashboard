@@ -33,16 +33,26 @@ function Graph({ width, height }: GraphProps) {
 
   useEffect(() => {
     if (fileContent && fileInfo) {
-      const columns = parser(fileContent, fileInfo, headers);
+      const columns = parser(fileContent, fileInfo, headers, setHeaders);
 
       setChartData(columns);
       setLoading(false);
 
-      const tempHeaderSeries = headers.slice(1).map((header, index) => ({
+      const headersWithNoTime = headers.slice(1);
+
+      const tempHeaderSeries = headersWithNoTime.map((header, index) => ({
         label: header,
-        stroke: headerColours[index + 1],
+        stroke: headerColours[index],
         width: 2,
       }));
+
+      const tempAxes = {
+        stroke: "white",
+        font: "12px Arial",
+        grid: { stroke: "#444" },
+        label: headersWithNoTime[0],
+        labelFont: "14px Arial",
+      };
 
       setHeaderSeries(tempHeaderSeries);
 
@@ -60,13 +70,7 @@ function Graph({ width, height }: GraphProps) {
             label: "Time",
             labelFont: "14px Arial",
           },
-          {
-            stroke: "white",
-            font: "12px Arial",
-            grid: { stroke: "#444" },
-            label: "Humidity %",
-            labelFont: "14px Arial",
-          },
+          tempAxes,
         ],
         cursor: {
           sync: {

@@ -1,5 +1,5 @@
 import type { FileInfo } from "@/types";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Loader } from "lucide-react";
 import { Input } from "./ui/input";
@@ -41,27 +41,12 @@ export default function Upload({
       // maybe move to regex
       const tempExtension = tempFile.name.slice(-4);
       setExtension(tempExtension);
-      if (tempExtension === ".lvm") {
-        setStartTime(tempFile.name.slice(-8, -4));
-        setDate(tempFile.name.slice(-17, -9));
-        // const tempFileInfo: FileInfo = {
-        //   baseInfo: tempFile,
-        //   extension,
-        //   startTime,
-        //   date,
-        // };
-        // setFileInfo(tempFileInfo);
-      } else if (tempExtension === ".csv") {
-        setStartTime("1600");
-        setDate("25-05-20");
-        // const tempFileInfo: FileInfo = {
-        //   baseInfo: tempFile,
-        //   extension,
-        //   startTime: "1600",
-        //   date: "25-05-20",
-        // };
-        // setFileInfo(tempFileInfo);
-      }
+      const tempStartTime = tempFile.name.slice(-8, -4);
+      const tempDate = tempFile.name.slice(-17, -9);
+      const hour = tempStartTime.slice(0, 2);
+      const min = tempStartTime.slice(2, 4);
+      setStartTime(`${hour}:${min}`);
+      setDate(`20${tempDate}`);
       setFile(tempFile);
     }
   };
@@ -72,7 +57,7 @@ export default function Upload({
     reader.onload = (event) => {
       if (
         event.target &&
-        stringHeaders &&
+        (stringHeaders || fileHasHeaders) &&
         file &&
         extension &&
         startTime &&
@@ -85,8 +70,10 @@ export default function Upload({
           startTime,
           date,
         };
-        const headers = stringHeaders.split(",");
-        setHeaders(headers);
+        if (stringHeaders) {
+          const headers = stringHeaders.split(",");
+          setHeaders(headers);
+        }
         setFileInfo(tempFileInfo);
         setFileContent(event.target.result);
       }
@@ -95,25 +82,55 @@ export default function Upload({
     reader.readAsText(file);
   };
 
-  // const checkHeaders = () => {
-  //   const reader = new FileReader();
+  useEffect(() => {
+    if (file && extension) {
+      const reader = new FileReader();
 
-  //   reader.onload = (event) => {
-  //     if (event.target) {
-  //       const content = event.target.result;
-  //       if (content) {
-  //         if (extension === ".lvm") {
-  //           const lines = content.split(/\r?\n/);
-  //           const headers = lines[1].trim().split(/\s+/);
+      reader.onload = (event) => {
+        if (event.target) {
+          const content = event.target.result;
+          if (content) {
+            if (extension === ".lvm") {
+              const lines = content.split(/\r?\n/);
+              const headers = lines[0].trim().split(/\s+/);
+              let placeholderHeaders = "";
+              if (fileHasHeaders) {
+                headers.forEach((header, index) => {
+                  placeholderHeaders +=
+                    index === 0 ? `${header}` : `,${header}`;
+                });
+              } else {
+                headers.forEach((header, index) => {
+                  placeholderHeaders +=
+                    index === 0 ? `Time` : `,header ${index}`;
+                });
+              }
+              setStringHeaders(placeholderHeaders);
+            } else if (extension === ".csv") {
+              const lines = content.split(/\r?\n/);
+              const headers = lines[0].trim().split(",");
+              let placeholderHeaders = "";
+              if (fileHasHeaders) {
+                headers.forEach((header, index) => {
+                  placeholderHeaders +=
+                    index === 0 ? `${header}` : `,${header}`;
+                });
+              } else {
+                headers.forEach((header, index) => {
+                  placeholderHeaders +=
+                    index === 0 ? `Time` : `,header ${index}`;
+                });
+              }
+              setStringHeaders(placeholderHeaders);
+            }
+          }
+        }
+      };
 
-  //         } else if (extension === ".csv") {
-  //         }
-  //       }
-  //     }
-  //   };
-
-  //   reader.readAsText(file);
-  // };
+      const blob = file.slice(0, 2048);
+      reader.readAsText(blob);
+    }
+  }, [extension, file, fileHasHeaders]);
 
   return (
     <div className="pt-20">

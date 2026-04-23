@@ -84,35 +84,25 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
 
   useEffect(() => {
     if (fileContent && fileInfo && headers) {
-      const columns = parser(fileContent, fileInfo, headers);
+      const columns = parser(fileContent, fileInfo, headers, setHeaders);
 
       setChartData(columns);
       setLoading(false);
 
-      const tempHeaderSeries = headers.slice(1).map((header, index) => ({
+      const headersWithNoTime = headers.slice(1);
+
+      const tempHeaderSeries = headersWithNoTime.map((header, index) => ({
         label: header,
-        stroke: headerColours[index + 1],
+        stroke: headerColours[index],
         width: 2,
       }));
 
       setHeaderSeries(tempHeaderSeries);
-      console.log(tempHeaderSeries);
 
       setGraphProps({
         width: props.api.width - 10,
         height: props.api.height * 0.6,
-        series: [
-          {},
-          ...tempHeaderSeries,
-          // { label: "Pack 0 probe 1", stroke: "white", width: 2 },
-          // { label: "Pack 0 probe 2", stroke: "white", width: 2 },
-          // { label: "Pack 1 probe 1", stroke: "blue", width: 2 },
-          // { label: "Pack 1 probe 2", stroke: "blue", width: 2 },
-          // { label: "Pack 2 probe 1", stroke: "green", width: 2 },
-          // { label: "Pack 2 probe 2", stroke: "green", width: 2 },
-          // { label: "Pack 3 probe 1", stroke: "red", width: 2 },
-          // { label: "Pack 3 probe 2", stroke: "red", width: 2 },
-        ],
+        series: [{}, ...tempHeaderSeries],
         axes: [
           {
             stroke: "white",
@@ -127,7 +117,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             stroke: "white",
             font: "12px Arial",
             grid: { stroke: "#444" },
-            label: "ADC Values",
+            label: "Voltage",
             labelFont: "14px Arial",
           },
         ],
@@ -173,20 +163,16 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             setSpikeGroups((prev) => [...prev, workerResult]);
           }
         }
+
+        const spikeHeaderSeries = headerSeries.map((series) => ({
+          label: `${series.label} spikes`,
+          stroke: "orange",
+          width: 5,
+        }));
+
         setGraphProps((prev) => ({
           ...prev,
-          series: [
-            {},
-            ...headerSeries,
-            { label: "Pack 0 probe 1 Spikes", stroke: "orange", width: 5 },
-            { label: "Pack 0 probe 2 Spikes", stroke: "orange", width: 5 },
-            { label: "Pack 1 probe 1 Spikes", stroke: "orange", width: 5 },
-            { label: "Pack 1 probe 2 Spikes", stroke: "orange", width: 5 },
-            { label: "Pack 2 probe 1 Spikes", stroke: "orange", width: 5 },
-            { label: "Pack 2 probe 2 Spikes", stroke: "orange", width: 5 },
-            { label: "Pack 3 probe 1 Spikes", stroke: "orange", width: 5 },
-            { label: "Pack 3 probe 2 Spikes", stroke: "orange", width: 5 },
-          ],
+          series: [{}, ...headerSeries, ...spikeHeaderSeries],
         }));
         setChartData([...chartData, ...filteredArray]);
       };
