@@ -89,13 +89,14 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
       setChartData(columns);
       setLoading(false);
 
-      const tempHeaderSeries = headers.map((header, index) => ({
+      const tempHeaderSeries = headers.slice(1).map((header, index) => ({
         label: header,
-        stroke: headerColours[index],
+        stroke: headerColours[index + 1],
         width: 2,
       }));
 
       setHeaderSeries(tempHeaderSeries);
+      console.log(tempHeaderSeries);
 
       setGraphProps({
         width: props.api.width - 10,
