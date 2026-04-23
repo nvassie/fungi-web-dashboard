@@ -4,7 +4,7 @@ import { toUnixTimestamp } from "./time";
 export function parser(
   fileContent: string,
   fileInfo: FileInfo,
-  headers: string[] | null,
+  headers: string[],
 ) {
   if (fileInfo.extension === ".lvm") {
     const parsedData = lvmParser(fileContent, fileInfo, headers);
@@ -17,21 +17,19 @@ export function parser(
   }
 }
 
-function lvmParser(
-  fileContent: string,
-  fileInfo: FileInfo,
-  headers: string[] | null,
-) {
+function lvmParser(fileContent: string, fileInfo: FileInfo, headers: string[]) {
   const columns: number[][] = [];
   const lines = fileContent.split(/\r?\n/);
+  let startIndex = 0;
 
-  if (headers) {
+  if (headers.length > 0) {
+    startIndex = 1;
     headers.forEach(() => {
       columns.push([]);
     });
   }
 
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = startIndex; i < lines.length; i++) {
     if (!lines[i].trim()) continue;
 
     const values = lines[i].trim().split(/\s+/);

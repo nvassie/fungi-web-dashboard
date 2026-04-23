@@ -18,7 +18,18 @@ function Graph({ width, height }: GraphProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [chartData, setChartData] = useState<number[][]>([]);
   const [graphProps, setGraphProps] = useState({});
-  const headers = null;
+  const headerColours = [
+    "white",
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "purple",
+    "cyan",
+    "pink",
+  ];
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [headerSeries, setHeaderSeries] = useState<any[]>([]);
 
   useEffect(() => {
     if (fileContent && fileInfo) {
@@ -27,10 +38,18 @@ function Graph({ width, height }: GraphProps) {
       setChartData(columns);
       setLoading(false);
 
+      const tempHeaderSeries = headers.map((header, index) => ({
+        label: header,
+        stroke: headerColours[index],
+        width: 2,
+      }));
+
+      setHeaderSeries(tempHeaderSeries);
+
       setGraphProps({
         width: width - 10,
         height: height * 0.6,
-        series: [{}, { label: "Humidity %", stroke: "white", width: 2 }],
+        series: [{}, ...tempHeaderSeries],
         axes: [
           {
             stroke: "white",
@@ -60,6 +79,8 @@ function Graph({ width, height }: GraphProps) {
 
   useEffect(() => {
     if (!chartRef.current) return;
+
+    console.log(graphProps);
 
     plotRef.current = new uPlot(graphProps, chartData, chartRef.current);
 
@@ -92,6 +113,7 @@ function Graph({ width, height }: GraphProps) {
             setFileContent={setFileContent}
             loading={loading}
             setLoading={setLoading}
+            setHeaders={setHeaders}
           />
         </div>
       )}

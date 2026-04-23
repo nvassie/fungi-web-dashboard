@@ -38,17 +38,29 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const [fileContent, setFileContent] = useState<string>();
   const [fileInfo, setFileInfo] = useState<FileInfo>();
   const [loading, setLoading] = useState<boolean>(false);
-  const headers = [
-    "Time (seconds)",
-    "Pack 0 probe 1",
-    "Pack 0 probe 2",
-    "Pack 1 probe 1",
-    "Pack 1 probe 2",
-    "Pack 2 probe 1",
-    "Pack 2 probe 2",
-    "Pack 3 probe 1",
-    "Pack 3 probe 2",
+  // const headers = [
+  // "Time (seconds)",
+  // "Pack 0 probe 1",
+  // "Pack 0 probe 2",
+  // "Pack 1 probe 1",
+  // "Pack 1 probe 2",
+  // "Pack 2 probe 1",
+  // "Pack 2 probe 2",
+  // "Pack 3 probe 1",
+  // "Pack 3 probe 2",
+  // ];
+  const headerColours = [
+    "white",
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "purple",
+    "cyan",
+    "pink",
   ];
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [headerSeries, setHeaderSeries] = useState<any[]>([]);
   const [graphIds, setGraphIds] = useAtom(graphIdsAtom);
   const [spikeGroups, setSpikeGroups] = useAtom(spikeGroupsAtom);
   const [userSpikeFunctions, setSpikeUserFunctions] = useAtom(
@@ -71,25 +83,34 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const spikeRunner = wrap(spikeWorker);
 
   useEffect(() => {
-    if (fileContent && fileInfo) {
+    if (fileContent && fileInfo && headers) {
       const columns = parser(fileContent, fileInfo, headers);
 
       setChartData(columns);
       setLoading(false);
+
+      const tempHeaderSeries = headers.map((header, index) => ({
+        label: header,
+        stroke: headerColours[index],
+        width: 2,
+      }));
+
+      setHeaderSeries(tempHeaderSeries);
 
       setGraphProps({
         width: props.api.width - 10,
         height: props.api.height * 0.6,
         series: [
           {},
-          { label: "Pack 0 probe 1", stroke: "white", width: 2 },
-          { label: "Pack 0 probe 2", stroke: "white", width: 2 },
-          { label: "Pack 1 probe 1", stroke: "blue", width: 2 },
-          { label: "Pack 1 probe 2", stroke: "blue", width: 2 },
-          { label: "Pack 2 probe 1", stroke: "green", width: 2 },
-          { label: "Pack 2 probe 2", stroke: "green", width: 2 },
-          { label: "Pack 3 probe 1", stroke: "red", width: 2 },
-          { label: "Pack 3 probe 2", stroke: "red", width: 2 },
+          ...tempHeaderSeries,
+          // { label: "Pack 0 probe 1", stroke: "white", width: 2 },
+          // { label: "Pack 0 probe 2", stroke: "white", width: 2 },
+          // { label: "Pack 1 probe 1", stroke: "blue", width: 2 },
+          // { label: "Pack 1 probe 2", stroke: "blue", width: 2 },
+          // { label: "Pack 2 probe 1", stroke: "green", width: 2 },
+          // { label: "Pack 2 probe 2", stroke: "green", width: 2 },
+          // { label: "Pack 3 probe 1", stroke: "red", width: 2 },
+          // { label: "Pack 3 probe 2", stroke: "red", width: 2 },
         ],
         axes: [
           {
@@ -126,7 +147,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   ]);
 
   useEffect(() => {
-    if (toggleSpikes) {
+    if (toggleSpikes && headerSeries) {
       const detectSpikes = async () => {
         const spikesArray: number[][] = [];
         const filteredArray: number[][] = [];
@@ -155,14 +176,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
           ...prev,
           series: [
             {},
-            { label: "Pack 0 probe 1", stroke: "white", width: 2 },
-            { label: "Pack 0 probe 2", stroke: "white", width: 2 },
-            { label: "Pack 1 probe 1", stroke: "blue", width: 2 },
-            { label: "Pack 1 probe 2", stroke: "blue", width: 2 },
-            { label: "Pack 2 probe 1", stroke: "green", width: 2 },
-            { label: "Pack 2 probe 2", stroke: "green", width: 2 },
-            { label: "Pack 3 probe 1", stroke: "red", width: 2 },
-            { label: "Pack 3 probe 2", stroke: "red", width: 2 },
+            ...headerSeries,
             { label: "Pack 0 probe 1 Spikes", stroke: "orange", width: 5 },
             { label: "Pack 0 probe 2 Spikes", stroke: "orange", width: 5 },
             { label: "Pack 1 probe 1 Spikes", stroke: "orange", width: 5 },
@@ -285,6 +299,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             setFileContent={setFileContent}
             loading={loading}
             setLoading={setLoading}
+            setHeaders={setHeaders}
           />
         </div>
       )}
