@@ -1,14 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { Button } from "../ui/button";
-import { useAtom } from "jotai";
-import { graphIdsAtom, spikeGroupsAtom, userSpikeFunctionsAtom } from "@/jotai";
+import { useAtom, useSetAtom } from "jotai";
+import {
+  availableSpikeChannelsAtom,
+  graphIdsAtom,
+  manualSpikeSelectionAtom,
+  spikeGroupsAtom,
+  userSpikeFunctionsAtom,
+} from "@/jotai";
 import type { IDockviewPanelProps } from "dockview";
 import Graph from "@/components/Graph";
 import { v4 as uuidv4 } from "uuid";
 import type { FileInfo } from "@/types";
 import Upload from "@/components/Upload";
+import { buildManualSpikeGraphData } from "@/lib/manualSpikeGraph";
 import { parser } from "@/lib/parsers";
 import { detectSpikesRolling } from "@/lib/spikes";
 import { toUnixTimestamp } from "@/lib/time";
@@ -31,6 +38,7 @@ interface GraphProps {
 
 export default function GraphPanel({ props, width, height }: GraphProps) {
   const [chartData, setChartData] = useState<number[][]>([]);
+  const [detectedSpikeData, setDetectedSpikeData] = useState<number[][]>([]);
   const [toggleSpikes, setToggleSpikes] = useState(false);
   const [graphProps, setGraphProps] = useState({});
   const chartRef = useRef<HTMLDivElement | null>(null);
@@ -66,6 +74,10 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const [userSpikeFunctions, setSpikeUserFunctions] = useAtom(
     userSpikeFunctionsAtom,
   );
+  const [manualSelection, setManualSelection] = useAtom(
+    manualSpikeSelectionAtom,
+  );
+  const setAvailableSpikeChannels = useSetAtom(availableSpikeChannelsAtom);
   const [detectionFunction, setDetectionFunction] = useState<string>("default");
   const codeworker = new Worker(
     new URL("../../workers/userSpikeFunctionWorker.ts", import.meta.url),
@@ -81,6 +93,25 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     },
   );
   const spikeRunner = wrap(spikeWorker);
+  const manualSpikeGraphData = useMemo(
+    () => buildManualSpikeGraphData(chartData, headers, spikeGroups),
+    [chartData, headers, spikeGroups],
+  );
+  const visibleChartData = useMemo(
+    () => [...chartData, ...detectedSpikeData, ...manualSpikeGraphData.data],
+    [chartData, detectedSpikeData, manualSpikeGraphData.data],
+  );
+  const visibleGraphProps = useMemo(() => {
+    const series =
+      "series" in graphProps
+        ? (graphProps.series as { label?: string; stroke?: string; width?: number }[])
+        : [];
+
+    return {
+      ...graphProps,
+      series: [...series, ...manualSpikeGraphData.series],
+    };
+  }, [graphProps, manualSpikeGraphData.series]);
 
   useEffect(() => {
     if (fileContent && fileInfo && headers) {
@@ -90,6 +121,9 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
       setLoading(false);
 
       const headersWithNoTime = headers.slice(1);
+      setAvailableSpikeChannels((currentChannels) =>
+        Array.from(new Set([...currentChannels, ...headersWithNoTime])),
+      );
 
       const tempHeaderSeries = headersWithNoTime.map((header, index) => ({
         label: header,
@@ -174,7 +208,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
           ...prev,
           series: [{}, ...headerSeries, ...spikeHeaderSeries],
         }));
-        setChartData([...chartData, ...filteredArray]);
+        setDetectedSpikeData(filteredArray);
       };
 
       detectSpikes();
@@ -184,13 +218,17 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   useEffect(() => {
     if (!chartRef.current) return;
 
-    plotRef.current = new uPlot(graphProps, chartData, chartRef.current);
+    plotRef.current = new uPlot(
+      visibleGraphProps as uPlot.Options,
+      visibleChartData as uPlot.AlignedData,
+      chartRef.current,
+    );
 
     return () => {
       plotRef.current?.destroy();
       plotRef.current = null;
     };
-  }, [chartData, graphProps]);
+  }, [visibleChartData, visibleGraphProps]);
 
   useEffect(() => {
     const temp = {
@@ -199,6 +237,49 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     };
     plotRef.current?.setSize(temp);
   }, [width, height]);
+
+  useEffect(() => {
+    const plot = plotRef.current;
+
+    if (!plot || !manualSelection.enabled) {
+      return;
+    }
+
+    const activePlot = plot;
+
+    function handleGraphClick(event: MouseEvent) {
+      const bounds = activePlot.over.getBoundingClientRect();
+      const xPosition = event.clientX - bounds.left;
+      const clickedTime = activePlot.posToVal(xPosition, "x");
+
+      setManualSelection((currentSelection) => {
+        if (
+          currentSelection.startTime === undefined ||
+          currentSelection.endTime !== undefined
+        ) {
+          return {
+            enabled: true,
+            startTime: clickedTime,
+          };
+        }
+
+        const startTime = Math.min(currentSelection.startTime, clickedTime);
+        const endTime = Math.max(currentSelection.startTime, clickedTime);
+
+        return {
+          enabled: true,
+          startTime,
+          endTime,
+        };
+      });
+    }
+
+    activePlot.over.addEventListener("click", handleGraphClick);
+
+    return () => {
+      activePlot.over.removeEventListener("click", handleGraphClick);
+    };
+  }, [manualSelection.enabled, setManualSelection]);
 
   async function userCode(functionName: string, input: number[]) {
     try {
@@ -255,6 +336,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
               <Button
                 onClick={() => {
                   setChartData([]);
+                  setDetectedSpikeData([]);
                   setGraphProps({});
                   setFileContent();
                   setFileInfo();
@@ -262,6 +344,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                   setDetectionFunction("default");
                   setLoading(false);
                   setGraphIds([]);
+                  setAvailableSpikeChannels([]);
+                  setManualSelection({ enabled: false });
                   chartRef.current = null;
                   plotRef.current = null;
                 }}

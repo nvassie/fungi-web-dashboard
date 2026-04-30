@@ -9,6 +9,7 @@ import { useAtomValue } from "jotai";
 import { Download } from "lucide-react";
 import Papa from "papaparse";
 import { useMemo } from "react";
+import ManualSpikeSelection from "../manualSpikeSelection";
 import RasterSpikePlot from "../RasterSpikePlot";
 import { Button } from "../ui/button";
 
@@ -144,6 +145,7 @@ function SpikePanel() {
 
   return (
     <div className="h-full min-h-0 overflow-y-auto">
+      <ManualSpikeSelection />
       {spikeGroups.length > 0 && rows ? (
         <div>
           <div className="p-4 overflow-x-auto">

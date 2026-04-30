@@ -4,6 +4,11 @@ import "uplot/dist/uPlot.min.css";
 import type { FileInfo } from "@/types";
 import Upload from "@/components/Upload";
 import { parser } from "@/lib/parsers";
+import {
+  availableSpikeChannelsAtom,
+  manualSpikeSelectionAtom,
+} from "@/jotai";
+import { useAtom, useSetAtom } from "jotai";
 
 interface GraphProps {
   width: number;
@@ -29,7 +34,10 @@ function Graph({ width, height }: GraphProps) {
     "pink",
   ];
   const [headers, setHeaders] = useState<string[]>([]);
-  const [headerSeries, setHeaderSeries] = useState<any[]>([]);
+  const [manualSelection, setManualSelection] = useAtom(
+    manualSpikeSelectionAtom,
+  );
+  const setAvailableSpikeChannels = useSetAtom(availableSpikeChannelsAtom);
 
   useEffect(() => {
     if (fileContent && fileInfo) {
@@ -39,6 +47,9 @@ function Graph({ width, height }: GraphProps) {
       setLoading(false);
 
       const headersWithNoTime = headers.slice(1);
+      setAvailableSpikeChannels((currentChannels) =>
+        Array.from(new Set([...currentChannels, ...headersWithNoTime])),
+      );
 
       const tempHeaderSeries = headersWithNoTime.map((header, index) => ({
         label: header,
@@ -53,8 +64,6 @@ function Graph({ width, height }: GraphProps) {
         label: headersWithNoTime[0],
         labelFont: "14px Arial",
       };
-
-      setHeaderSeries(tempHeaderSeries);
 
       setGraphProps({
         width: width - 10,
@@ -84,8 +93,6 @@ function Graph({ width, height }: GraphProps) {
   useEffect(() => {
     if (!chartRef.current) return;
 
-    console.log(graphProps);
-
     plotRef.current = new uPlot(graphProps, chartData, chartRef.current);
 
     return () => {
@@ -101,6 +108,49 @@ function Graph({ width, height }: GraphProps) {
     };
     plotRef.current?.setSize(temp);
   }, [width, height]);
+
+  useEffect(() => {
+    const plot = plotRef.current;
+
+    if (!plot || !manualSelection.enabled) {
+      return;
+    }
+
+    const activePlot = plot;
+
+    function handleGraphClick(event: MouseEvent) {
+      const bounds = activePlot.over.getBoundingClientRect();
+      const xPosition = event.clientX - bounds.left;
+      const clickedTime = activePlot.posToVal(xPosition, "x");
+
+      setManualSelection((currentSelection) => {
+        if (
+          currentSelection.startTime === undefined ||
+          currentSelection.endTime !== undefined
+        ) {
+          return {
+            enabled: true,
+            startTime: clickedTime,
+          };
+        }
+
+        const startTime = Math.min(currentSelection.startTime, clickedTime);
+        const endTime = Math.max(currentSelection.startTime, clickedTime);
+
+        return {
+          enabled: true,
+          startTime,
+          endTime,
+        };
+      });
+    }
+
+    activePlot.over.addEventListener("click", handleGraphClick);
+
+    return () => {
+      activePlot.over.removeEventListener("click", handleGraphClick);
+    };
+  }, [manualSelection.enabled, setManualSelection]);
 
   return (
     <div className="mb-3">
