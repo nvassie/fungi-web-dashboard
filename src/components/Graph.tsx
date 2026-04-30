@@ -9,6 +9,8 @@ import {
   manualSpikeSelectionAtom,
 } from "@/jotai";
 import { useAtom, useSetAtom } from "jotai";
+import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { Button } from "./ui/button";
 
 interface GraphProps {
   width: number;
@@ -152,10 +154,88 @@ function Graph({ width, height }: GraphProps) {
     };
   }, [manualSelection.enabled, setManualSelection]);
 
+  function zoomGraph(multiplier: number) {
+    const plot = plotRef.current;
+    const timeData = chartData[0];
+
+    if (!plot || !timeData || timeData.length === 0) {
+      return;
+    }
+
+    const fullMin = timeData[0];
+    const fullMax = timeData[timeData.length - 1];
+    const currentMin =
+      typeof plot.scales.x.min === "number" ? plot.scales.x.min : fullMin;
+    const currentMax =
+      typeof plot.scales.x.max === "number" ? plot.scales.x.max : fullMax;
+    const center = (currentMin + currentMax) / 2;
+    const nextRange = (currentMax - currentMin) * multiplier;
+    const nextMin = Math.max(fullMin, center - nextRange / 2);
+    const nextMax = Math.min(fullMax, center + nextRange / 2);
+
+    if (nextMax > nextMin) {
+      plot.setScale("x", {
+        min: nextMin,
+        max: nextMax,
+      });
+    }
+  }
+
+  function resetGraphZoom() {
+    const plot = plotRef.current;
+    const timeData = chartData[0];
+
+    if (!plot || !timeData || timeData.length === 0) {
+      return;
+    }
+
+    plot.setScale("x", {
+      min: timeData[0],
+      max: timeData[timeData.length - 1],
+    });
+  }
+
   return (
     <div className="mb-3">
       {chartData.length > 0 ? (
-        <div className="text-white" ref={chartRef} />
+        <div>
+          <div className="text-white" ref={chartRef} />
+          <div className="mt-3 flex justify-center gap-2">
+            <Button
+              aria-label="Zoom in"
+              className="text-black"
+              onClick={() => zoomGraph(0.5)}
+              size="sm"
+              title="Zoom in"
+              type="button"
+            >
+              <ZoomIn />
+              Zoom In
+            </Button>
+            <Button
+              aria-label="Zoom out"
+              className="text-black"
+              onClick={() => zoomGraph(2)}
+              size="sm"
+              title="Zoom out"
+              type="button"
+            >
+              <ZoomOut />
+              Zoom Out
+            </Button>
+            <Button
+              aria-label="Reset zoom"
+              className="text-black"
+              onClick={resetGraphZoom}
+              size="sm"
+              title="Reset zoom"
+              type="button"
+            >
+              <RotateCcw />
+              Reset
+            </Button>
+          </div>
+        </div>
       ) : (
         <div>
           <p className="pt-20 text-white">
