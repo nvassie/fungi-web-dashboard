@@ -6,8 +6,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useAtomValue } from "jotai";
+import { Download } from "lucide-react";
+import Papa from "papaparse";
 import { useMemo } from "react";
 import RasterSpikePlot from "../RasterSpikePlot";
+import { Button } from "../ui/button";
 
 // type SpikeGroup = {
 //   channel: string;
@@ -28,8 +31,34 @@ import RasterSpikePlot from "../RasterSpikePlot";
 type SpikeRow = {
   channel: string;
   spikeNum: number;
+  times: number[][];
+  values: number[][];
+  durations: number[];
   startTimes: string[];
 };
+
+function downloadSpikeRow(row: SpikeRow) {
+  const csvRows = row.values.map((spikeValues, spikeIndex) => ({
+      channel: row.channel,
+      spikeIndex: spikeIndex + 1,
+      duration: row.durations[spikeIndex] ?? "",
+      startTime: row.startTimes[spikeIndex] ?? "",
+      values: spikeValues.join(", "),
+    }));
+
+  const csv = Papa.unparse(csvRows);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const safeChannel = row.channel.replace(/[^a-z0-9_-]+/gi, "_");
+
+  link.href = url;
+  link.download = `${safeChannel || "spike-row"}-spikes.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 // const columnHelper = createColumnHelper<SpikeRow>();
 
@@ -59,6 +88,23 @@ const columns = [
     header: "Number of Spikes",
     cell: (info) => info.getValue(),
   }),
+  columnHelper.display({
+    id: "download",
+    header: "Download",
+    cell: ({ row }) => (
+      <Button
+        aria-label={`Download ${row.original.channel} spikes as CSV`}
+        className="text-black"
+        disabled={row.original.spikeNum === 0}
+        onClick={() => downloadSpikeRow(row.original)}
+        size="sm"
+        type="button"
+      >
+        <Download />
+        CSV
+      </Button>
+    ),
+  }),
 ];
 
 function SpikePanel() {
@@ -83,6 +129,9 @@ function SpikePanel() {
     return spikeGroups.map((group) => ({
       channel: group.channel,
       spikeNum: group.values.length,
+      times: group.times,
+      values: group.values,
+      durations: group.durations,
       startTimes: group.startTimes,
     }));
   }, [spikeGroups]);
