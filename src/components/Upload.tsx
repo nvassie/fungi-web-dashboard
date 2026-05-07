@@ -207,7 +207,9 @@ export default function Upload({
             )}
           </div>
         ) : (
-          <p className="text-muted-foreground">Select a file to upload.</p>
+          <div className="flex justify-center">
+            <p className="text-muted-foreground">Select a file to upload.</p>
+          </div>
         )}
       </div>
       <div className="flex gap-3 justify-center">
