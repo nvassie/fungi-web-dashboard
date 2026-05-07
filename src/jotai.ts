@@ -13,6 +13,16 @@ export const spikeGroupsAtom = atom<
   }[]
 >([]);
 
+export const manualSpikeSelectionAtom = atom<{
+  enabled: boolean;
+  startTime?: number;
+  endTime?: number;
+}>({
+  enabled: false,
+});
+
+export const availableSpikeChannelsAtom = atom<string[]>([]);
+
 export const userSpikeFunctionsAtom = atomWithStorage<
   { name: string; code: string }[]
 >("functions", [
