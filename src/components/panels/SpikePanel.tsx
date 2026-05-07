@@ -9,25 +9,9 @@ import { useAtomValue } from "jotai";
 import { Download } from "lucide-react";
 import Papa from "papaparse";
 import { useMemo } from "react";
-import ManualSpikeSelection from "../manualSpikeSelection";
+import ManualSpikeSelection from "../ManualSpikeSelection";
 import RasterSpikePlot from "../RasterSpikePlot";
 import { Button } from "../ui/button";
-
-// type SpikeGroup = {
-//   channel: string;
-//   times: number[][];
-//   values: number[][];
-//   durations: number[];
-//   startTimes: string[];
-// };
-
-// type SpikeRow = {
-//   channel: string;
-//   times: number[];
-//   values: number[];
-//   duration: number;
-//   startTime: string;
-// };
 
 type SpikeRow = {
   channel: string;
@@ -61,23 +45,6 @@ function downloadSpikeRow(row: SpikeRow) {
   URL.revokeObjectURL(url);
 }
 
-// const columnHelper = createColumnHelper<SpikeRow>();
-
-// const columns = [
-//   columnHelper.accessor("channel", {
-//     header: "Channel",
-//     cell: (info) => info.getValue(),
-//   }),
-//   columnHelper.accessor("duration", {
-//     header: "Durations",
-//     cell: (info) => info.getValue().toFixed(3),
-//   }),
-//   columnHelper.accessor("startTime", {
-//     header: "Start Times",
-//     cell: (info) => info.getValue(),
-//   }),
-// ];
-
 const columnHelper = createColumnHelper<SpikeRow>();
 
 const columns = [
@@ -109,21 +76,6 @@ const columns = [
 
 function SpikePanel() {
   const spikeGroups = useAtomValue(spikeGroupsAtom);
-
-  // const rows = spikeGroups.map((group) => ({
-  //   channel: group.channel,
-  //   spikeNum: group.values.length,
-  // }));
-
-  // const rows: SpikeRow[] = spikeGroups.flatMap((group) =>
-  //   group.durations.map((duration, i) => ({
-  //     channel: group.channel,
-  //     times: group.times[i],
-  //     values: group.values[i],
-  //     duration,
-  //     startTime: group.startTimes[i],
-  //   })),
-  // );
 
   const rows = useMemo(() => {
     return spikeGroups.map((group) => ({

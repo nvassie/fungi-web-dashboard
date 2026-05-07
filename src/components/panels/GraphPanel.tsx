@@ -438,7 +438,9 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
         </div>
       ) : (
         <div>
-          <p className="empty-state">No data available, please upload data.</p>
+          <p className="empty-state">
+            No data available, please an electrical signals file.
+          </p>
           <Upload
             fileInfo={fileInfo}
             setFileInfo={setFileInfo}

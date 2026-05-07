@@ -232,7 +232,7 @@ export default function ManualSpikeSelection() {
       ) : null}
       {channels.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          Detect spikes first to make channels available.
+          Upload data to be able to manually add spikes.
         </p>
       ) : null}
       {error ? <p className="mt-2 text-sm text-red-300">{error}</p> : null}
