@@ -54,7 +54,7 @@ const components = {
 const LeftComponent = (props: IDockviewHeaderActionsProps) => {
   return (
     <div>
-      <AddPanels props={props} />
+      <AddPanels {...props} />
     </div>
   );
 };

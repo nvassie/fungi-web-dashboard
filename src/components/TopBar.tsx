@@ -6,14 +6,16 @@ interface TopBarProps {
 
 export default function TopBar({ saveLayout }: TopBarProps) {
   return (
-    <div className="flex items-center h-14 pt-2 bg-[#000c18] px-4">
-      <div className="flex-1" />
-      <p className="flex-1 text-center text-white">Fungi Dashboard</p>
+    <header className="flex h-14 items-center border-b bg-sidebar px-4">
+      <div className="flex-1" aria-hidden="true" />
+      <p className="flex-1 text-center text-sm font-semibold tracking-normal text-sidebar-foreground">
+        Fungi Dashboard
+      </p>
       <div className="flex flex-1 justify-end">
-        <Button className="text-black" onClick={saveLayout}>
+        <Button onClick={saveLayout} size="sm">
           Save Layout
         </Button>
       </div>
-    </div>
+    </header>
   );
 }

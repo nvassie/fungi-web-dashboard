@@ -6,7 +6,7 @@ import { Input } from "./ui/input";
 import { Switch } from "./ui/switch";
 
 interface UploadProps {
-  fileInfo: FileInfo;
+  fileInfo?: FileInfo;
   setFileInfo: React.Dispatch<React.SetStateAction<FileInfo | undefined>>;
   setFileContent: React.Dispatch<React.SetStateAction<string | undefined>>;
   loading: boolean;
@@ -15,7 +15,6 @@ interface UploadProps {
 }
 
 export default function Upload({
-  fileInfo,
   setFileInfo,
   setFileContent,
   loading,
@@ -29,10 +28,10 @@ export default function Upload({
   const [extension, setExtension] = useState<string>();
   const [fileHasHeaders, setFileHasHeaders] = useState<boolean>(false);
 
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleClick = () => {
-    inputRef.current.click();
+    inputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,6 +51,10 @@ export default function Upload({
   };
 
   const handleUpload = () => {
+    if (!file) {
+      return;
+    }
+
     const reader = new FileReader();
 
     reader.onload = (event) => {
@@ -63,6 +66,13 @@ export default function Upload({
         startTime &&
         date
       ) {
+        const content =
+          typeof event.target.result === "string" ? event.target.result : "";
+
+        if (!content) {
+          return;
+        }
+
         setLoading(true);
         const tempFileInfo: FileInfo = {
           baseInfo: file,
@@ -75,7 +85,7 @@ export default function Upload({
           setHeaders(headers);
         }
         setFileInfo(tempFileInfo);
-        setFileContent(event.target.result);
+        setFileContent(content);
       }
     };
 
@@ -89,7 +99,7 @@ export default function Upload({
       reader.onload = (event) => {
         if (event.target) {
           const content = event.target.result;
-          if (content) {
+          if (typeof content === "string") {
             if (extension === ".lvm") {
               const lines = content.split(/\r?\n/);
               const headers = lines[0].trim().split(/\s+/);
@@ -100,7 +110,7 @@ export default function Upload({
                     index === 0 ? `${header}` : `,${header}`;
                 });
               } else {
-                headers.forEach((header, index) => {
+                headers.forEach((_header, index) => {
                   placeholderHeaders +=
                     index === 0 ? `Time` : `,header ${index}`;
                 });
@@ -116,7 +126,7 @@ export default function Upload({
                     index === 0 ? `${header}` : `,${header}`;
                 });
               } else {
-                headers.forEach((header, index) => {
+                headers.forEach((_header, index) => {
                   placeholderHeaders +=
                     index === 0 ? `Time` : `,header ${index}`;
                 });
@@ -133,42 +143,44 @@ export default function Upload({
   }, [extension, file, fileHasHeaders]);
 
   return (
-    <div className="pt-20">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8">
       <input
         type="file"
         ref={inputRef}
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
-      <div className="text-white pb-3">
+      <div className="pb-4">
         {file ? (
-          <div className="flex flex-col">
-            <p>{`Name: ${file.name}`}</p>
-            <p>{`Size: ${file.size}`}</p>
-            <div className="flex flex-col gap-3 m-5">
-              <p className="font-semibold">Parameters</p>
-              <div className="flex items-center">
-                <p className="flex-1">Recording start time:</p>
+          <div className="grid gap-4 rounded-lg border bg-card p-4 text-card-foreground">
+            <div>
+              <p className="font-medium">{file.name}</p>
+              <p className="text-sm text-muted-foreground">{`${file.size.toLocaleString()} bytes`}</p>
+            </div>
+            <div className="grid gap-3">
+              <p className="text-sm font-semibold">Parameters</p>
+              <div className="grid gap-2 sm:grid-cols-[12rem_1fr] sm:items-center">
+                <p className="text-sm text-muted-foreground">
+                  Recording start time
+                </p>
                 <Input
-                  className="flex-4 bg-white text-black"
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   placeholder="Set start time"
                 />
               </div>
-              <div className="flex items-center">
-                <p className="flex-1">Recording date:</p>
+              <div className="grid gap-2 sm:grid-cols-[12rem_1fr] sm:items-center">
+                <p className="text-sm text-muted-foreground">Recording date</p>
                 <Input
-                  className="flex-4 bg-white text-black"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   placeholder="Set date"
                 />
               </div>
-              <div className="flex items-center justify-center gap-5">
-                <p>
+              <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/50 px-3 py-2">
+                <p className="text-sm text-muted-foreground">
                   Enter headers for the file in the format header1,header2,...
                 </p>
                 <Switch
@@ -176,10 +188,9 @@ export default function Upload({
                   onCheckedChange={setFileHasHeaders}
                 />
               </div>
-              <div className="flex items-center">
-                <p className="flex-1">Headers:</p>
+              <div className="grid gap-2 sm:grid-cols-[12rem_1fr] sm:items-center">
+                <p className="text-sm text-muted-foreground">Headers</p>
                 <Input
-                  className="flex-4 bg-white text-black"
                   disabled={fileHasHeaders}
                   type="text"
                   value={stringHeaders}
@@ -196,14 +207,12 @@ export default function Upload({
             )}
           </div>
         ) : (
-          <p>Select a file to upload.</p>
+          <p className="text-muted-foreground">Select a file to upload.</p>
         )}
       </div>
       <div className="flex gap-3 justify-center">
-        <Button onClick={handleClick} className="text-black">
-          Select File
-        </Button>
-        <Button disabled={!file} onClick={handleUpload} className="text-black">
+        <Button onClick={handleClick}>Select File</Button>
+        <Button disabled={!file} onClick={handleUpload}>
           Upload file
         </Button>
       </div>

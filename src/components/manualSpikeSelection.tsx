@@ -139,7 +139,7 @@ export default function ManualSpikeSelection() {
   }
 
   return (
-    <section className="border-b border-white/20 p-4 text-white">
+    <section className="border-b bg-card/40 p-4 text-card-foreground">
       <h2 className="mb-3 text-sm font-semibold">Manual Spike Selection</h2>
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
@@ -149,10 +149,7 @@ export default function ManualSpikeSelection() {
             value={channel}
             onValueChange={setChannel}
           >
-            <SelectTrigger
-              className="w-56 bg-white text-black"
-              id="manual-spike-channel"
-            >
+            <SelectTrigger className="w-56" id="manual-spike-channel">
               <SelectValue placeholder="Select channel" />
             </SelectTrigger>
             <SelectContent>
@@ -171,7 +168,7 @@ export default function ManualSpikeSelection() {
         <div className="grid gap-1">
           <Label htmlFor="manual-spike-start">Start time</Label>
           <Input
-            className="w-40 bg-white text-black"
+            className="w-40"
             id="manual-spike-start"
             onChange={(event) => setStartTime(event.target.value)}
             step="1"
@@ -183,7 +180,7 @@ export default function ManualSpikeSelection() {
         <div className="grid gap-1">
           <Label htmlFor="manual-spike-end">End time</Label>
           <Input
-            className="w-40 bg-white text-black"
+            className="w-40"
             id="manual-spike-end"
             onChange={(event) => setEndTime(event.target.value)}
             step="1"
@@ -193,7 +190,6 @@ export default function ManualSpikeSelection() {
         </div>
 
         <Button
-          className="text-black"
           disabled={channels.length === 0}
           onClick={addManualSpike}
           type="button"
@@ -202,7 +198,6 @@ export default function ManualSpikeSelection() {
         </Button>
 
         <Button
-          className="text-black"
           onClick={() =>
             setGraphSelection((currentSelection) => ({
               enabled: !currentSelection.enabled,
@@ -214,7 +209,7 @@ export default function ManualSpikeSelection() {
         </Button>
 
         <Button
-          className="text-black"
+          variant="outline"
           onClick={() => {
             setStartTime("");
             setEndTime("");
@@ -230,13 +225,13 @@ export default function ManualSpikeSelection() {
       </div>
 
       {graphSelection.enabled ? (
-        <p className="mt-2 text-sm text-white/70">
+        <p className="mt-2 text-sm text-muted-foreground">
           Click the graph once for the start time, then click again for the end
           time.
         </p>
       ) : null}
       {channels.length === 0 ? (
-        <p className="mt-2 text-sm text-white/70">
+        <p className="mt-2 text-sm text-muted-foreground">
           Detect spikes first to make channels available.
         </p>
       ) : null}

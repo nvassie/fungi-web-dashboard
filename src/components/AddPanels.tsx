@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-export default function AddPanels({ props }: IDockviewHeaderActionsProps) {
+export default function AddPanels(props: IDockviewHeaderActionsProps) {
   const [modalStatus, setModalStatus] = useState<boolean>(false);
 
   const onClick = (panel: string) => {
@@ -33,35 +33,46 @@ export default function AddPanels({ props }: IDockviewHeaderActionsProps) {
   return (
     <Dialog open={modalStatus} onOpenChange={setModalStatus}>
       <DialogTrigger asChild>
-        <Plus
+        <Button
+          aria-label="Add panel"
+          size="icon"
+          title="Add panel"
           onClick={() => setModalStatus(true)}
-          className="text-white w-9 mt-[5px] h-6"
-        />
+          variant="ghost"
+        >
+          <Plus />
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a panel</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col">
-          <Button onClick={() => onClick("Graph")}>
-            <ChartSpline className="text-black" />
-            <p className="text-black">Graph</p>
+        <div className="grid gap-2">
+          <Button className="justify-start" onClick={() => onClick("Graph")}>
+            <ChartSpline />
+            Graph
           </Button>
-          <Button onClick={() => onClick("graphsetting")}>
-            <FileChartLine className="text-black" />
-            <p className="text-black">Graph Settings</p>
+          <Button
+            className="justify-start"
+            onClick={() => onClick("graphsetting")}
+          >
+            <FileChartLine />
+            Graph Settings
           </Button>
-          <Button onClick={() => onClick("usersetting")}>
-            <Settings className="text-black" />
-            <p className="text-black">User Settings</p>
+          <Button
+            className="justify-start"
+            onClick={() => onClick("usersetting")}
+          >
+            <Settings />
+            User Settings
           </Button>
-          <Button onClick={() => onClick("home")}>
-            <FlaskConical className="text-black" />
-            <p className="text-black">Home Panel</p>
+          <Button className="justify-start" onClick={() => onClick("home")}>
+            <FlaskConical />
+            Home Panel
           </Button>
-          <Button onClick={() => onClick("spike")}>
-            <ChartLine className="text-black" />
-            <p className="text-black">Spike Panel</p>
+          <Button className="justify-start" onClick={() => onClick("spike")}>
+            <ChartLine />
+            Spike Panel
           </Button>
         </div>
       </DialogContent>

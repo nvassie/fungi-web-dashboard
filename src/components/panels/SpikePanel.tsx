@@ -40,12 +40,12 @@ type SpikeRow = {
 
 function downloadSpikeRow(row: SpikeRow) {
   const csvRows = row.values.map((spikeValues, spikeIndex) => ({
-      channel: row.channel,
-      spikeIndex: spikeIndex + 1,
-      duration: row.durations[spikeIndex] ?? "",
-      startTime: row.startTimes[spikeIndex] ?? "",
-      values: spikeValues.join(", "),
-    }));
+    channel: row.channel,
+    spikeIndex: spikeIndex + 1,
+    duration: row.durations[spikeIndex] ?? "",
+    startTime: row.startTimes[spikeIndex] ?? "",
+    values: spikeValues.join(", "),
+  }));
 
   const csv = Papa.unparse(csvRows);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -95,7 +95,6 @@ const columns = [
     cell: ({ row }) => (
       <Button
         aria-label={`Download ${row.original.channel} spikes as CSV`}
-        className="text-black"
         disabled={row.original.spikeNum === 0}
         onClick={() => downloadSpikeRow(row.original)}
         size="sm"
@@ -144,17 +143,20 @@ function SpikePanel() {
   });
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto">
+    <div className="panel-surface">
       <ManualSpikeSelection />
       {spikeGroups.length > 0 && rows ? (
         <div>
           <div className="p-4 overflow-x-auto">
-            <table className="border-separate border-spacing-x-4">
+            <table className="w-full min-w-md border-separate border-spacing-0 overflow-hidden rounded-lg border text-sm">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
+                  <tr key={headerGroup.id} className="bg-muted">
                     {headerGroup.headers.map((header) => (
-                      <th key={header.id} className="text-white">
+                      <th
+                        key={header.id}
+                        className="px-4 py-3 text-left font-medium text-muted-foreground"
+                      >
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -168,9 +170,12 @@ function SpikePanel() {
               </thead>
               <tbody>
                 {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id}>
+                  <tr key={row.id} className="border-t">
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="text-white">
+                      <td
+                        key={cell.id}
+                        className="border-t px-4 py-3 text-foreground"
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),
@@ -186,7 +191,7 @@ function SpikePanel() {
         </div>
       ) : (
         <div>
-          <p className="pt-20 text-white">
+          <p className="empty-state">
             No data available, please detect spikes.
           </p>
         </div>

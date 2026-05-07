@@ -35,19 +35,30 @@ export default function RasterSpikePlot({ rows }: RasterSpikePlotProps) {
           y: plotData.y,
           type: "scatter",
           mode: "lines",
-          line: { width: 2, color: "black" },
+          line: { width: 2, color: "#65d6b4" },
           hoverinfo: "x",
         },
       ]}
       layout={{
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: {
+          color: "#f1f5f9",
+        },
         margin: {
           l: 110,
+          r: 24,
+          t: 48,
+          b: 48,
         },
-        title: { text: "Raster Spike Plot" },
+        title: { text: "Raster Spike Plot", font: { color: "#f1f5f9" } },
         xaxis: {
           type: "date",
           title: { text: "Time" },
           tickformat: "%H:%M:%S",
+          gridcolor: "rgba(255,255,255,0.12)",
+          linecolor: "rgba(255,255,255,0.18)",
+          zerolinecolor: "rgba(255,255,255,0.18)",
         },
         yaxis: {
           title: { text: "Channel" },
@@ -56,9 +67,18 @@ export default function RasterSpikePlot({ rows }: RasterSpikePlotProps) {
           tickvals: plotData.yLabels.map((_, i) => i + 1),
           ticktext: plotData.yLabels,
           autorange: "reversed",
+          gridcolor: "rgba(255,255,255,0.12)",
+          linecolor: "rgba(255,255,255,0.18)",
+          zerolinecolor: "rgba(255,255,255,0.18)",
         },
         showlegend: false,
       }}
+      className="w-full"
+      config={{
+        displayModeBar: false,
+        responsive: true,
+      }}
+      style={{ width: "100%" }}
     />
   );
 }

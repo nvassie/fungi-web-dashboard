@@ -26,17 +26,22 @@ export default function UserSettingsPanel() {
   const [editCode, setEditCode] = useState<string>("");
 
   return (
-    <div className="flex flex-col">
-      <Card className="m-5 bg-gray-100">
+    <div className="panel-content">
+      <Card>
         <CardHeader>
           <CardTitle>Spike Detection</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div>
-            <p>Functions</p>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Functions
+            </p>
             {userSpikeFunctions.map((func) => (
-              <div className="flex items-center justify-between">
-                <p>{func.name}</p>
+              <div
+                className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2"
+                key={func.name}
+              >
+                <p className="font-medium">{func.name}</p>
                 <div className="flex gap-2">
                   {func.name !== "default" && (
                     <Dialog>
@@ -44,7 +49,14 @@ export default function UserSettingsPanel() {
                         asChild
                         onClick={() => setEditCode(func.code)}
                       >
-                        <Pencil className="h-5 w-5" />
+                        <Button
+                          aria-label={`Edit ${func.name}`}
+                          size="icon"
+                          title={`Edit ${func.name}`}
+                          variant="ghost"
+                        >
+                          <Pencil />
+                        </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
@@ -54,12 +66,12 @@ export default function UserSettingsPanel() {
                           </DialogDescription>
                         </DialogHeader>
                         <Textarea
+                          className="min-h-48 font-mono text-sm"
                           value={editCode}
                           onChange={(e) => setEditCode(e.target.value)}
                         />
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-2">
                           <Button
-                            className="text-black"
                             onClick={() => {
                               setSpikeUserFunctions((prev) => [
                                 ...prev.filter(
@@ -73,7 +85,7 @@ export default function UserSettingsPanel() {
                             Confirm
                           </Button>
                           <DialogClose asChild>
-                            <Button className="text-black">Cancel</Button>
+                            <Button variant="outline">Cancel</Button>
                           </DialogClose>
                         </div>
                       </DialogContent>
@@ -82,15 +94,21 @@ export default function UserSettingsPanel() {
                   {func.name !== "default" && (
                     <Dialog>
                       <DialogTrigger asChild>
-                        <X className="h-5 w-5" />
+                        <Button
+                          aria-label={`Remove ${func.name}`}
+                          size="icon"
+                          title={`Remove ${func.name}`}
+                          variant="ghost"
+                        >
+                          <X />
+                        </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Remove {func.name}</DialogTitle>
                         </DialogHeader>
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-2">
                           <Button
-                            className="text-black"
                             onClick={() =>
                               setSpikeUserFunctions((prev) =>
                                 prev.filter(
@@ -102,7 +120,7 @@ export default function UserSettingsPanel() {
                             Confirm
                           </Button>
                           <DialogClose asChild>
-                            <Button className="text-black">Cancel</Button>
+                            <Button variant="outline">Cancel</Button>
                           </DialogClose>
                         </div>
                       </DialogContent>
@@ -114,7 +132,7 @@ export default function UserSettingsPanel() {
           </div>
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="text-black">Add Function</Button>
+              <Button className="w-fit">Add Function</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -127,7 +145,7 @@ export default function UserSettingsPanel() {
                 </DialogDescription>
               </DialogHeader>
               <Label>Function format:</Label>
-              <pre>
+              <pre className="overflow-x-auto rounded-md border bg-muted p-3 text-sm text-muted-foreground">
                 {`function FUNCTION NAME(input) {
                   YOUR CODE
                 }`}
@@ -139,11 +157,11 @@ export default function UserSettingsPanel() {
               />
               <Label>Function code:</Label>
               <Textarea
+                className="min-h-48 font-mono text-sm"
                 value={addFunctionCode}
                 onChange={(e) => setAddFunctionCode(e.target.value)}
               />
               <Button
-                className="text-black"
                 onClick={() => {
                   setSpikeUserFunctions((prev) => [
                     ...prev,
@@ -159,18 +177,6 @@ export default function UserSettingsPanel() {
           </Dialog>
         </CardContent>
       </Card>
-      {/* <Card className="m-5 bg-gray-300">
-        <CardHeader>
-          <CardTitle>Other</CardTitle>
-        </CardHeader>
-        <CardContent></CardContent>
-      </Card>
-      <Card className="m-5 bg-gray-300">
-        <CardHeader>
-          <CardTitle>User</CardTitle>
-        </CardHeader>
-        <CardContent></CardContent>
-      </Card> */}
     </div>
   );
 }

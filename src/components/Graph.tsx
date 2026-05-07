@@ -4,10 +4,7 @@ import "uplot/dist/uPlot.min.css";
 import type { FileInfo } from "@/types";
 import Upload from "@/components/Upload";
 import { parser } from "@/lib/parsers";
-import {
-  availableSpikeChannelsAtom,
-  manualSpikeSelectionAtom,
-} from "@/jotai";
+import { availableSpikeChannelsAtom, manualSpikeSelectionAtom } from "@/jotai";
 import { useAtom, useSetAtom } from "jotai";
 import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "./ui/button";
@@ -199,11 +196,10 @@ function Graph({ width, height }: GraphProps) {
     <div className="mb-3">
       {chartData.length > 0 ? (
         <div>
-          <div className="text-white" ref={chartRef} />
+          <div className="chart-shell" ref={chartRef} />
           <div className="mt-3 flex justify-center gap-2">
             <Button
               aria-label="Zoom in"
-              className="text-black"
               onClick={() => zoomGraph(0.5)}
               size="sm"
               title="Zoom in"
@@ -214,7 +210,6 @@ function Graph({ width, height }: GraphProps) {
             </Button>
             <Button
               aria-label="Zoom out"
-              className="text-black"
               onClick={() => zoomGraph(2)}
               size="sm"
               title="Zoom out"
@@ -225,7 +220,6 @@ function Graph({ width, height }: GraphProps) {
             </Button>
             <Button
               aria-label="Reset zoom"
-              className="text-black"
               onClick={resetGraphZoom}
               size="sm"
               title="Reset zoom"
@@ -238,9 +232,7 @@ function Graph({ width, height }: GraphProps) {
         </div>
       ) : (
         <div>
-          <p className="pt-20 text-white">
-            No data available, please upload data.
-          </p>
+          <p className="empty-state">No data available, please upload data.</p>
           <Upload
             fileInfo={fileInfo}
             setFileInfo={setFileInfo}

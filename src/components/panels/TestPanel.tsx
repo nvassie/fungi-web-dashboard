@@ -27,12 +27,12 @@ export default function TestPanel() {
   }
 
   return (
-    <div>
-      <p className="text-white">Home Panel</p>
-      <Label className="text-white" htmlFor="test">
+    <div className="panel-content">
+      <h2 className="text-sm font-semibold">Home Panel</h2>
+      <Label className="mt-4" htmlFor="test">
         Home Panel
       </Label>
-      <Button className="text-black" onClick={() => test()}>
+      <Button className="mt-2" onClick={() => test()}>
         Click
       </Button>
     </div>

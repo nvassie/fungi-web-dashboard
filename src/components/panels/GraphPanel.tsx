@@ -105,7 +105,11 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const visibleGraphProps = useMemo(() => {
     const series =
       "series" in graphProps
-        ? (graphProps.series as { label?: string; stroke?: string; width?: number }[])
+        ? (graphProps.series as {
+            label?: string;
+            stroke?: string;
+            width?: number;
+          }[])
         : [];
 
     return {
@@ -337,7 +341,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   }
 
   return (
-    <div className="h-[calc(100%-55px)] min-h-0 overflow-y-auto overflow-x-hidden">
+    <div className="panel-surface">
       {chartData.length > 0 ? (
         <div>
           <div>
@@ -346,7 +350,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
               <div className="flex gap-2">
                 <Button
                   aria-label="Zoom in"
-                  className="text-black"
                   onClick={() => zoomGraph(0.5)}
                   size="sm"
                   title="Zoom in"
@@ -357,7 +360,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                 </Button>
                 <Button
                   aria-label="Zoom out"
-                  className="text-black"
                   onClick={() => zoomGraph(2)}
                   size="sm"
                   title="Zoom out"
@@ -368,7 +370,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                 </Button>
                 <Button
                   aria-label="Reset zoom"
-                  className="text-black"
                   onClick={resetGraphZoom}
                   size="sm"
                   title="Reset zoom"
@@ -398,7 +399,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                 onClick={() => {
                   setToggleSpikes((prev) => !prev);
                 }}
-                className="text-black"
               >
                 Detect Spikes
               </Button>
@@ -406,7 +406,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                 onClick={() => {
                   setGraphIds((prev) => [...prev, uuidv4()]);
                 }}
-                className="text-black"
+                variant="secondary"
               >
                 Add graph
               </Button>
@@ -426,7 +426,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                   chartRef.current = null;
                   plotRef.current = null;
                 }}
-                className="text-black"
+                variant="outline"
               >
                 Clear Data
               </Button>
@@ -438,9 +438,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
         </div>
       ) : (
         <div>
-          <p className="pt-20 text-white">
-            No data available, please upload data.
-          </p>
+          <p className="empty-state">No data available, please upload data.</p>
           <Upload
             fileInfo={fileInfo}
             setFileInfo={setFileInfo}
