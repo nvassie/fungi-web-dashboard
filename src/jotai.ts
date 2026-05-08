@@ -44,3 +44,21 @@ export const userSpikeFunctionsAtom = atomWithStorage<
   return spikes;`,
   },
 ]);
+
+export const userCustomFunctionGroupsAtom = atomWithStorage<
+  {
+    id: string;
+    content: {
+      groupName: string;
+      functions: {
+        name: string;
+        code: string;
+      }[];
+    };
+  }[]
+>("customFunctions", []);
+
+export const userCustomFunctionsRunOrderAtom = atomWithStorage<string[]>(
+  "order",
+  [],
+);
