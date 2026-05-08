@@ -5,8 +5,8 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useAtomValue } from "jotai";
-import { Download } from "lucide-react";
+import { useAtom } from "jotai";
+import { Download, Trash2 } from "lucide-react";
 import Papa from "papaparse";
 import { useMemo } from "react";
 import ManualSpikeSelection from "../ManualSpikeSelection";
@@ -20,6 +20,15 @@ type SpikeRow = {
   values: number[][];
   durations: number[];
   startTimes: string[];
+};
+
+type SpikeDetailRow = {
+  channel: string;
+  duration: number;
+  groupIndex: number;
+  isManual: boolean;
+  spikeIndex: number;
+  startTime: string;
 };
 
 function downloadSpikeRow(row: SpikeRow) {
@@ -75,7 +84,7 @@ const columns = [
 ];
 
 function SpikePanel() {
-  const spikeGroups = useAtomValue(spikeGroupsAtom);
+  const [spikeGroups, setSpikeGroups] = useAtom(spikeGroupsAtom);
 
   const rows = useMemo(() => {
     return spikeGroups.map((group) => ({
@@ -88,11 +97,54 @@ function SpikePanel() {
     }));
   }, [spikeGroups]);
 
+  const spikeDetailRows = useMemo<SpikeDetailRow[]>(() => {
+    return spikeGroups.flatMap((group, groupIndex) =>
+      group.startTimes.map((startTime, spikeIndex) => ({
+        channel: group.channel,
+        duration: group.durations[spikeIndex] ?? 0,
+        groupIndex,
+        isManual:
+          group.values[spikeIndex]?.length === 0 &&
+          group.times[spikeIndex]?.length === 2,
+        spikeIndex,
+        startTime,
+      })),
+    );
+  }, [spikeGroups]);
+
   const table = useReactTable({
     data: rows,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  function deleteSpike(groupIndex: number, spikeIndex: number) {
+    setSpikeGroups((currentGroups) =>
+      currentGroups
+        .map((group, currentGroupIndex) => {
+          if (currentGroupIndex !== groupIndex) {
+            return group;
+          }
+
+          return {
+            ...group,
+            durations: group.durations.filter(
+              (_, currentSpikeIndex) => currentSpikeIndex !== spikeIndex,
+            ),
+            startTimes: group.startTimes.filter(
+              (_, currentSpikeIndex) => currentSpikeIndex !== spikeIndex,
+            ),
+            times: group.times.filter(
+              (_, currentSpikeIndex) => currentSpikeIndex !== spikeIndex,
+            ),
+            values: group.values.filter(
+              (_, currentSpikeIndex) => currentSpikeIndex !== spikeIndex,
+            ),
+          };
+        })
+        .filter((group) => group.values.length > 0),
+    );
+  }
 
   return (
     <div className="panel-surface">
@@ -134,6 +186,64 @@ function SpikePanel() {
                         )}
                       </td>
                     ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="p-4 pt-0 overflow-x-auto">
+            <h2 className="mb-3 text-sm font-semibold">Individual Spikes</h2>
+            <table className="w-full min-w-md border-separate border-spacing-0 overflow-hidden rounded-lg border text-sm">
+              <thead>
+                <tr className="bg-muted">
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    Channel
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    Type
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    Start Time
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    Duration
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    Delete
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {spikeDetailRows.map((spike) => (
+                  <tr
+                    key={`${spike.channel}-${spike.groupIndex}-${spike.spikeIndex}`}
+                  >
+                    <td className="border-t px-4 py-3 text-foreground">
+                      {spike.channel}
+                    </td>
+                    <td className="border-t px-4 py-3 text-foreground">
+                      {spike.isManual ? "Manual" : "Automatic"}
+                    </td>
+                    <td className="border-t px-4 py-3 text-foreground">
+                      {spike.startTime}
+                    </td>
+                    <td className="border-t px-4 py-3 text-foreground">
+                      {spike.duration.toFixed(3)}s
+                    </td>
+                    <td className="border-t px-4 py-3 text-foreground">
+                      <Button
+                        aria-label={`Delete ${spike.channel} ${spike.startTime} spike`}
+                        onClick={() =>
+                          deleteSpike(spike.groupIndex, spike.spikeIndex)
+                        }
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        <Trash2 />
+                        Delete
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

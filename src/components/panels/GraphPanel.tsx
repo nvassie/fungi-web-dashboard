@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { Button } from "../ui/button";
 import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   availableSpikeChannelsAtom,
   graphIdsAtom,
@@ -16,10 +16,11 @@ import Graph from "@/components/Graph";
 import { v4 as uuidv4 } from "uuid";
 import type { FileInfo } from "@/types";
 import Upload from "@/components/Upload";
-import { buildManualSpikeGraphData } from "@/lib/manualSpikeGraph";
+import {
+  buildAutomaticSpikeGraphData,
+  buildManualSpikeGraphData,
+} from "@/lib/ManualSpikeGraph";
 import { parser } from "@/lib/parsers";
-import { detectSpikesRolling } from "@/lib/spikes";
-import { toUnixTimestamp } from "@/lib/time";
 import {
   Select,
   SelectContent,
@@ -37,11 +38,42 @@ interface GraphProps {
   height: number;
 }
 
+type GraphSeries = {
+  label: string;
+  stroke: string;
+  width: number;
+};
+
+type SpikeGroup = {
+  channel: string;
+  times: number[][];
+  values: number[][];
+  durations: number[];
+  startTimes: string[];
+};
+
+type SpikeDetectionResult = {
+  spike: number[];
+  filtered?: (number | null)[];
+};
+
+type CodeRunner = {
+  runCode: (code: string, input: number[]) => Promise<SpikeDetectionResult>;
+};
+
+type SpikeRunner = {
+  groupSpikes: (
+    channel: string,
+    spikes: number[],
+    originalData: number[],
+    fileInfo: FileInfo,
+  ) => Promise<SpikeGroup>;
+};
+
 export default function GraphPanel({ props, width, height }: GraphProps) {
   const [chartData, setChartData] = useState<number[][]>([]);
-  const [detectedSpikeData, setDetectedSpikeData] = useState<number[][]>([]);
   const [toggleSpikes, setToggleSpikes] = useState(false);
-  const [graphProps, setGraphProps] = useState({});
+  const [graphProps, setGraphProps] = useState<Partial<uPlot.Options>>({});
   const chartRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
   const [fileContent, setFileContent] = useState<string>();
@@ -69,38 +101,55 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     "pink",
   ];
   const [headers, setHeaders] = useState<string[]>([]);
-  const [headerSeries, setHeaderSeries] = useState<any[]>([]);
+  const [headerSeries, setHeaderSeries] = useState<GraphSeries[]>([]);
   const [graphIds, setGraphIds] = useAtom(graphIdsAtom);
   const [spikeGroups, setSpikeGroups] = useAtom(spikeGroupsAtom);
-  const [userSpikeFunctions, setSpikeUserFunctions] = useAtom(
-    userSpikeFunctionsAtom,
-  );
+  const userSpikeFunctions = useAtomValue(userSpikeFunctionsAtom);
   const [manualSelection, setManualSelection] = useAtom(
     manualSpikeSelectionAtom,
   );
   const setAvailableSpikeChannels = useSetAtom(availableSpikeChannelsAtom);
   const [detectionFunction, setDetectionFunction] = useState<string>("default");
-  const codeworker = new Worker(
-    new URL("../../workers/userSpikeFunctionWorker.ts", import.meta.url),
-    {
-      type: "module",
-    },
+  const codeWorker = useMemo(
+    () =>
+      new Worker(
+        new URL("../../workers/userSpikeFunctionWorker.ts", import.meta.url),
+        {
+          type: "module",
+        },
+      ),
+    [],
   );
-  const codeRunner = wrap(codeworker);
-  const spikeWorker = new Worker(
-    new URL("../../workers/spikeGroupWorker.ts", import.meta.url),
-    {
-      type: "module",
-    },
+  const codeRunner = useMemo(() => wrap<CodeRunner>(codeWorker), [codeWorker]);
+  const spikeWorker = useMemo(
+    () =>
+      new Worker(
+        new URL("../../workers/spikeGroupWorker.ts", import.meta.url),
+        {
+          type: "module",
+        },
+      ),
+    [],
   );
-  const spikeRunner = wrap(spikeWorker);
+  const spikeRunner = useMemo(
+    () => wrap<SpikeRunner>(spikeWorker),
+    [spikeWorker],
+  );
   const manualSpikeGraphData = useMemo(
     () => buildManualSpikeGraphData(chartData, headers, spikeGroups),
     [chartData, headers, spikeGroups],
   );
+  const automaticSpikeGraphData = useMemo(
+    () => buildAutomaticSpikeGraphData(chartData, headers, spikeGroups),
+    [chartData, headers, spikeGroups],
+  );
   const visibleChartData = useMemo(
-    () => [...chartData, ...detectedSpikeData, ...manualSpikeGraphData.data],
-    [chartData, detectedSpikeData, manualSpikeGraphData.data],
+    () => [
+      ...chartData,
+      ...automaticSpikeGraphData.data,
+      ...manualSpikeGraphData.data,
+    ],
+    [automaticSpikeGraphData.data, chartData, manualSpikeGraphData.data],
   );
   const visibleGraphProps = useMemo(() => {
     const series =
@@ -114,9 +163,41 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
 
     return {
       ...graphProps,
-      series: [...series, ...manualSpikeGraphData.series],
+      series: [
+        ...series,
+        ...automaticSpikeGraphData.series,
+        ...manualSpikeGraphData.series,
+      ],
     };
-  }, [graphProps, manualSpikeGraphData.series]);
+  }, [automaticSpikeGraphData.series, graphProps, manualSpikeGraphData.series]);
+
+  useEffect(() => {
+    return () => {
+      codeWorker.terminate();
+      spikeWorker.terminate();
+    };
+  }, [codeWorker, spikeWorker]);
+
+  const userCode = useCallback(
+    async (functionName: string, input: number[]) => {
+      try {
+        const selectedFunction = userSpikeFunctions.find(
+          (func) => func.name === functionName,
+        );
+
+        if (!selectedFunction) {
+          return { spike: [] };
+        }
+
+        const output = await codeRunner.runCode(selectedFunction.code, input);
+        return output;
+      } catch (error) {
+        console.log(error);
+        return { spike: [] };
+      }
+    },
+    [codeRunner, userSpikeFunctions],
+  );
 
   useEffect(() => {
     if (fileContent && fileInfo && headers) {
@@ -147,8 +228,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             stroke: "white",
             font: "12px Arial",
             grid: { stroke: "#444" },
-            values: (u, ticks) =>
-              ticks.map((t) => new Date(t * 1000).toLocaleTimeString()),
+            values: (_u: uPlot, ticks: number[]) =>
+              ticks.map((t: number) => new Date(t * 1000).toLocaleTimeString()),
             label: "Time",
             labelFont: "14px Arial",
           },
@@ -179,8 +260,11 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   useEffect(() => {
     if (toggleSpikes && headerSeries) {
       const detectSpikes = async () => {
+        if (!fileInfo) {
+          return;
+        }
+
         const spikesArray: number[][] = [];
-        const filteredArray: number[][] = [];
         for (let i = 1; i < chartData.length; i++) {
           if (chartData[i].length > 0) {
             const workerResult = await userCode(
@@ -188,7 +272,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
               chartData[i],
             );
             spikesArray.push(workerResult.spike);
-            filteredArray.push(workerResult.filtered);
           }
         }
         for (let j = 0; j < spikesArray.length; j++) {
@@ -203,22 +286,25 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
           }
         }
 
-        const spikeHeaderSeries = headerSeries.map((series) => ({
-          label: `${series.label} spikes`,
-          stroke: "orange",
-          width: 5,
-        }));
-
         setGraphProps((prev) => ({
           ...prev,
-          series: [{}, ...headerSeries, ...spikeHeaderSeries],
+          series: [{}, ...headerSeries],
         }));
-        setDetectedSpikeData(filteredArray);
       };
 
       detectSpikes();
     }
-  }, [toggleSpikes]);
+  }, [
+    chartData,
+    detectionFunction,
+    fileInfo,
+    headerSeries,
+    headers,
+    setSpikeGroups,
+    spikeRunner,
+    toggleSpikes,
+    userCode,
+  ]);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -285,19 +371,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
       activePlot.over.removeEventListener("click", handleGraphClick);
     };
   }, [manualSelection.enabled, setManualSelection]);
-
-  async function userCode(functionName: string, input: number[]) {
-    try {
-      const code = userSpikeFunctions.find(
-        (func) => func.name === functionName,
-      ).code;
-      const output = await codeRunner.runCode(code, input);
-      return output;
-    } catch (error) {
-      console.log(error);
-      return [];
-    }
-  }
 
   function zoomGraph(multiplier: number) {
     const plot = plotRef.current;
@@ -413,14 +486,14 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
               <Button
                 onClick={() => {
                   setChartData([]);
-                  setDetectedSpikeData([]);
                   setGraphProps({});
-                  setFileContent();
-                  setFileInfo();
+                  setFileContent(undefined);
+                  setFileInfo(undefined);
                   setToggleSpikes(false);
                   setDetectionFunction("default");
                   setLoading(false);
                   setGraphIds([]);
+                  setSpikeGroups([]);
                   setAvailableSpikeChannels([]);
                   setManualSelection({ enabled: false });
                   chartRef.current = null;

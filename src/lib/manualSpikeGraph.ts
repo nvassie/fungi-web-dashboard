@@ -67,3 +67,49 @@ export function buildManualSpikeGraphData(
 
   return { data, series };
 }
+
+export function buildAutomaticSpikeGraphData(
+  chartData: number[][],
+  headers: string[],
+  spikeGroups: SpikeGroup[],
+) {
+  const timeData = chartData[0] ?? [];
+  const channelHeaders = headers.slice(1);
+  const data: (number | null)[][] = [];
+  const series: GraphSeries[] = [];
+
+  if (timeData.length === 0 || channelHeaders.length === 0) {
+    return { data, series };
+  }
+
+  channelHeaders.forEach((channel, channelIndex) => {
+    const channelData = chartData[channelIndex + 1] ?? [];
+    const automaticSpikeData: (number | null)[] = timeData.map(() => null);
+    const spikeGroup = spikeGroups.find((group) => group.channel === channel);
+
+    spikeGroup?.times.forEach((sampleIndexes, spikeIndex) => {
+      const isManualSpike =
+        spikeGroup.values[spikeIndex]?.length === 0 &&
+        sampleIndexes.length === 2;
+
+      if (isManualSpike) {
+        return;
+      }
+
+      sampleIndexes.forEach((sampleIndex) => {
+        automaticSpikeData[sampleIndex] = channelData[sampleIndex] ?? null;
+      });
+    });
+
+    if (automaticSpikeData.some((value) => value !== null)) {
+      data.push(automaticSpikeData);
+      series.push({
+        label: `${channel} spikes`,
+        stroke: "orange",
+        width: 5,
+      });
+    }
+  });
+
+  return { data, series };
+}
