@@ -58,7 +58,9 @@ export const userCustomFunctionGroupsAtom = atomWithStorage<
   }[]
 >("customFunctions", []);
 
-export const userCustomFunctionsRunOrderAtom = atomWithStorage<string[]>(
-  "order",
-  [],
-);
+export const userCustomFunctionsRunOrderAtom = atomWithStorage<
+  {
+    type: string;
+    functionName: string;
+  }[]
+>("order", []);
