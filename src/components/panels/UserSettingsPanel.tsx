@@ -223,7 +223,10 @@ export default function UserSettingsPanel() {
                   ]);
                   setUserCustomFunctionsRunOrder((prev) => [
                     ...prev,
-                    addFunctionGroupName,
+                    {
+                      type: addFunctionGroupName,
+                      functionName: "None",
+                    },
                   ]);
                   setAddFunctionGroupName("");
                 }}
