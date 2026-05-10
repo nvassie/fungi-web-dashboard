@@ -12,6 +12,8 @@ interface UploadProps {
   loading: boolean;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
   setHeaders: React.Dispatch<React.SetStateAction<string[]>>;
+  runCustomFunctions?: boolean;
+  setRunCustomFunctions?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function Upload({
@@ -20,6 +22,8 @@ export default function Upload({
   loading,
   setLoading,
   setHeaders,
+  runCustomFunctions,
+  setRunCustomFunctions,
 }: UploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [startTime, setStartTime] = useState<string>();
@@ -181,7 +185,7 @@ export default function Upload({
               </div>
               <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/50 px-3 py-2">
                 <p className="text-sm text-muted-foreground">
-                  Enter headers for the file in the format header1,header2,...
+                  Use headers from file
                 </p>
                 <Switch
                   checked={fileHasHeaders}
@@ -196,6 +200,15 @@ export default function Upload({
                   value={stringHeaders}
                   onChange={(e) => setStringHeaders(e.target.value)}
                   placeholder="Enter file headers."
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/50 px-3 py-2">
+                <p className="text-sm text-muted-foreground">
+                  Run custom functions on upload
+                </p>
+                <Switch
+                  checked={runCustomFunctions ?? false}
+                  onCheckedChange={setRunCustomFunctions}
                 />
               </div>
             </div>

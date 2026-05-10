@@ -9,6 +9,8 @@ import {
   graphIdsAtom,
   manualSpikeSelectionAtom,
   spikeGroupsAtom,
+  userCustomFunctionGroupsAtom,
+  userCustomFunctionsRunOrderAtom,
   userSpikeFunctionsAtom,
 } from "@/jotai";
 import type { IDockviewPanelProps } from "dockview";
@@ -70,6 +72,10 @@ type SpikeRunner = {
   ) => Promise<SpikeGroup>;
 };
 
+type CustomFunctionRunner = {
+  runFunction: (functions: string[], input: number[][]) => Promise<number[][]>;
+};
+
 export default function GraphPanel({ props, width, height }: GraphProps) {
   const [chartData, setChartData] = useState<number[][]>([]);
   const [toggleSpikes, setToggleSpikes] = useState(false);
@@ -79,6 +85,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const [fileContent, setFileContent] = useState<string>();
   const [fileInfo, setFileInfo] = useState<FileInfo>();
   const [loading, setLoading] = useState<boolean>(false);
+  const [runCustomFunctions, setRunCustomFunctions] = useState(false);
   // const headers = [
   // "Time (seconds)",
   // "Pack 0 probe 1",
@@ -109,6 +116,10 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     manualSpikeSelectionAtom,
   );
   const setAvailableSpikeChannels = useSetAtom(availableSpikeChannelsAtom);
+  const userCustomFunctionGroups = useAtomValue(userCustomFunctionGroupsAtom);
+  const userCustomFunctionsRunOrder = useAtomValue(
+    userCustomFunctionsRunOrderAtom,
+  );
   const [detectionFunction, setDetectionFunction] = useState<string>("default");
   const codeWorker = useMemo(
     () =>
@@ -134,6 +145,34 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const spikeRunner = useMemo(
     () => wrap<SpikeRunner>(spikeWorker),
     [spikeWorker],
+  );
+  const customDataFunctionWorker = useMemo(
+    () =>
+      new Worker(
+        new URL("../../workers/customDataFunctionWorker.ts", import.meta.url),
+        {
+          type: "module",
+        },
+      ),
+    [],
+  );
+  const customFunctionRunner = useMemo(
+    () => wrap<CustomFunctionRunner>(customDataFunctionWorker),
+    [customDataFunctionWorker],
+  );
+  const customFunctionCodes = useMemo(
+    () =>
+      userCustomFunctionsRunOrder
+        .map(
+          (orderItem) =>
+            userCustomFunctionGroups
+              .find((group) => group.id === orderItem.type)
+              ?.content.functions.find(
+                (func) => func.name === orderItem.functionName,
+              )?.code,
+        )
+        .filter((code): code is string => Boolean(code)),
+    [userCustomFunctionGroups, userCustomFunctionsRunOrder],
   );
   const manualSpikeGraphData = useMemo(
     () => buildManualSpikeGraphData(chartData, headers, spikeGroups),
@@ -175,8 +214,9 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     return () => {
       codeWorker.terminate();
       spikeWorker.terminate();
+      customDataFunctionWorker.terminate();
     };
-  }, [codeWorker, spikeWorker]);
+  }, [codeWorker, customDataFunctionWorker, spikeWorker]);
 
   const userCode = useCallback(
     async (functionName: string, input: number[]) => {
@@ -201,60 +241,89 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
 
   useEffect(() => {
     if (fileContent && fileInfo && headers) {
-      const columns = parser(fileContent, fileInfo, headers, setHeaders);
+      const processFile = async () => {
+        try {
+          const columns = parser(fileContent, fileInfo, headers, setHeaders);
+          let processedColumns = columns;
 
-      setChartData(columns);
-      setLoading(false);
+          if (runCustomFunctions && customFunctionCodes.length > 0) {
+            const customFunctionResult = await customFunctionRunner.runFunction(
+              customFunctionCodes,
+              columns,
+            );
 
-      const headersWithNoTime = headers.slice(1);
-      setAvailableSpikeChannels((currentChannels) =>
-        Array.from(new Set([...currentChannels, ...headersWithNoTime])),
-      );
+            if (
+              Array.isArray(customFunctionResult) &&
+              customFunctionResult.every((series) => Array.isArray(series))
+            ) {
+              processedColumns = customFunctionResult;
+            }
+          }
 
-      const tempHeaderSeries = headersWithNoTime.map((header, index) => ({
-        label: header,
-        stroke: headerColours[index],
-        width: 2,
-      }));
+          setChartData(processedColumns);
 
-      setHeaderSeries(tempHeaderSeries);
+          const headersWithNoTime = headers.slice(1);
+          setAvailableSpikeChannels((currentChannels) =>
+            Array.from(new Set([...currentChannels, ...headersWithNoTime])),
+          );
 
-      setGraphProps({
-        width: props.api.width - 10,
-        height: props.api.height * 0.6,
-        series: [{}, ...tempHeaderSeries],
-        axes: [
-          {
-            stroke: "white",
-            font: "12px Arial",
-            grid: { stroke: "#444" },
-            values: (_u: uPlot, ticks: number[]) =>
-              ticks.map((t: number) => new Date(t * 1000).toLocaleTimeString()),
-            label: "Time",
-            labelFont: "14px Arial",
-          },
-          {
-            stroke: "white",
-            font: "12px Arial",
-            grid: { stroke: "#444" },
-            label: "Voltage",
-            labelFont: "14px Arial",
-          },
-        ],
-        cursor: {
-          sync: {
-            key: "test",
-          },
-        },
-      });
+          const tempHeaderSeries = headersWithNoTime.map((header, index) => ({
+            label: header,
+            stroke: headerColours[index],
+            width: 2,
+          }));
+
+          setHeaderSeries(tempHeaderSeries);
+
+          setGraphProps({
+            width: props.api.width - 10,
+            height: props.api.height * 0.6,
+            series: [{}, ...tempHeaderSeries],
+            axes: [
+              {
+                stroke: "white",
+                font: "12px Arial",
+                grid: { stroke: "#444" },
+                values: (_u: uPlot, ticks: number[]) =>
+                  ticks.map((t: number) =>
+                    new Date(t * 1000).toLocaleTimeString(),
+                  ),
+                label: "Time",
+                labelFont: "14px Arial",
+              },
+              {
+                stroke: "white",
+                font: "12px Arial",
+                grid: { stroke: "#444" },
+                label: "Voltage",
+                labelFont: "14px Arial",
+              },
+            ],
+            cursor: {
+              sync: {
+                key: "test",
+              },
+            },
+          });
+        } catch (error) {
+          console.log(error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      processFile();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    customFunctionCodes,
+    customFunctionRunner,
     fileContent,
     fileInfo?.date,
     fileInfo?.startTime,
     props.api.height,
     props.api.width,
+    runCustomFunctions,
   ]);
 
   useEffect(() => {
@@ -492,6 +561,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                   setToggleSpikes(false);
                   setDetectionFunction("default");
                   setLoading(false);
+                  setRunCustomFunctions(false);
                   setGraphIds([]);
                   setSpikeGroups([]);
                   setAvailableSpikeChannels([]);
@@ -521,6 +591,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             loading={loading}
             setLoading={setLoading}
             setHeaders={setHeaders}
+            runCustomFunctions={runCustomFunctions}
+            setRunCustomFunctions={setRunCustomFunctions}
           />
         </div>
       )}

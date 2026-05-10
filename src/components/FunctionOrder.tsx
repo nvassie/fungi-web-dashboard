@@ -4,7 +4,7 @@ import {
 } from "@/jotai";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { useDroppable } from "@dnd-kit/react";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { GripVertical } from "lucide-react";
 import {
   Card,
@@ -35,6 +35,9 @@ function Sortable({ id, index }: SortableProps) {
   const setUserCustomFunctionsRunOrder = useSetAtom(
     userCustomFunctionsRunOrderAtom,
   );
+  const userCustomFunctionsRunOrder = useAtomValue(
+    userCustomFunctionsRunOrderAtom,
+  );
 
   const groupFunctions = useMemo(() => {
     if (userCustomFunctionGroups) {
@@ -60,7 +63,10 @@ function Sortable({ id, index }: SortableProps) {
       </div>
       {groupFunctions && groupFunctions.length > 0 && (
         <Select
-          value={groupFunctions[0].name}
+          value={
+            userCustomFunctionsRunOrder.find((item) => item.type === id)
+              ?.functionName ?? "None"
+          }
           onValueChange={(value) =>
             setUserCustomFunctionsRunOrder((prev) =>
               prev.map((item) =>
@@ -75,6 +81,7 @@ function Sortable({ id, index }: SortableProps) {
           <SelectContent>
             <SelectGroup>
               <SelectLabel>{id} Functions</SelectLabel>
+              <SelectItem value="None">None</SelectItem>
               {groupFunctions.map((func) => (
                 <SelectItem value={func.name}>{func.name}</SelectItem>
               ))}
