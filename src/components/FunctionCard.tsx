@@ -41,7 +41,7 @@ function FunctionCard({ id }: FunctionCardProps) {
 
   return (
     cardContent && (
-      <div>
+      <div className="mb-5">
         <Card>
           <CardHeader>
             <CardTitle>{cardContent.groupName}</CardTitle>

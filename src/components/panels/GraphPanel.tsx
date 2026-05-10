@@ -316,7 +316,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    customFunctionCodes,
     customFunctionRunner,
     fileContent,
     fileInfo?.date,

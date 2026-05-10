@@ -39,7 +39,7 @@ export default function UserSettingsPanel() {
   const [editCode, setEditCode] = useState<string>("");
 
   return (
-    <div className="panel-content">
+    <div className="panel-content min-h-0 h-full overflow-y-auto">
       <div>
         <Card>
           <CardHeader>
@@ -238,10 +238,15 @@ export default function UserSettingsPanel() {
         </Dialog>
       </div>
       {userCustomFunctionGroups && <FunctionOrder />}
-      {userCustomFunctionGroups &&
-        userCustomFunctionGroups.map((group) => (
-          <FunctionCard id={group.id} key={group.id} />
-        ))}
+      {userCustomFunctionGroups && (
+        <>
+          {userCustomFunctionGroups.map((group) => (
+            <FunctionCard id={group.id} key={group.id} />
+          ))}
+
+          <div className="mb-15" />
+        </>
+      )}
     </div>
   );
 }
