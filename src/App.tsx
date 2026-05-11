@@ -1,5 +1,6 @@
 import {
   DockviewReact,
+  type DockviewApi,
   type DockviewReadyEvent,
   type IDockviewHeaderActionsProps,
   type IDockviewPanelProps,
@@ -16,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import SpikePanel from "./components/panels/SpikePanel";
 import { DevTools } from "jotai-devtools";
 import "jotai-devtools/styles.css";
+import { v4 as uuidv4 } from "uuid";
 
 const components = {
   default: (props: IDockviewPanelProps) => {
@@ -46,8 +48,8 @@ const components = {
   home: () => {
     return <TestPanel />;
   },
-  spike: () => {
-    return <SpikePanel />;
+  spike: (props: IDockviewPanelProps) => {
+    return <SpikePanel props={props} />;
   },
 };
 
@@ -60,7 +62,7 @@ const LeftComponent = (props: IDockviewHeaderActionsProps) => {
 };
 
 export default function App() {
-  const dockviewRef = useRef<any>(null);
+  const dockviewRef = useRef<DockviewApi | null>(null);
 
   const onReady = (event: DockviewReadyEvent) => {
     dockviewRef.current = event.api;
@@ -75,14 +77,21 @@ export default function App() {
         component: "home",
       });
 
+      const graphId = uuidv4();
+
       event.api.addPanel({
-        id: "Graph",
+        id: graphId,
+        title: `Graph ${graphId.slice(0, 5)}`,
         component: "Graph",
       });
     }
   };
 
   const saveLayout = () => {
+    if (!dockviewRef.current) {
+      return;
+    }
+
     const currentLayout = dockviewRef.current.toJSON();
     localStorage.setItem("layout", JSON.stringify(currentLayout));
   };

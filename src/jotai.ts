@@ -3,23 +3,39 @@ import { atomWithStorage } from "jotai/utils";
 
 export const graphIdsAtom = atom<string[]>([]);
 
-export const spikeGroupsAtom = atom<
-  {
-    channel: string;
-    times: number[][];
-    values: number[][];
-    durations: number[];
-    startTimes: string[];
-  }[]
->([]);
+export type SpikeGroup = {
+  channel: string;
+  times: number[][];
+  values: number[][];
+  durations: number[];
+  startTimes: string[];
+};
+
+export type GraphPanelRecord = {
+  id: string;
+  name: string;
+};
+
+export const graphPanelsAtom = atom<GraphPanelRecord[]>([]);
+
+export const spikeGroupsByGraphPanelAtom = atom<Record<string, SpikeGroup[]>>(
+  {},
+);
+
+export const spikeGroupsAtom = atom<SpikeGroup[]>([]);
 
 export const manualSpikeSelectionAtom = atom<{
   enabled: boolean;
+  graphPanelId?: string;
   startTime?: number;
   endTime?: number;
 }>({
   enabled: false,
 });
+
+export const availableSpikeChannelsByGraphPanelAtom = atom<
+  Record<string, string[]>
+>({});
 
 export const availableSpikeChannelsAtom = atom<string[]>([]);
 

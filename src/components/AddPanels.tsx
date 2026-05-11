@@ -16,14 +16,31 @@ import {
   ChartLine,
 } from "lucide-react";
 import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+
+function getPanelTitle(panel: string, id: string) {
+  const panelLabel = panel.charAt(0).toLocaleUpperCase() + panel.slice(1);
+
+  if (panel === "Graph") {
+    return `Graph ${id.slice(0, 5)}`;
+  }
+
+  if (panel === "spike") {
+    return `Spike ${id.slice(0, 5)}`;
+  }
+
+  return panelLabel;
+}
 
 export default function AddPanels(props: IDockviewHeaderActionsProps) {
   const [modalStatus, setModalStatus] = useState<boolean>(false);
 
   const onClick = (panel: string) => {
+    const id = uuidv4();
+
     props.containerApi.addPanel({
-      id: Math.random().toString(),
-      title: `${panel.charAt(0).toLocaleUpperCase() + panel.slice(1)}`,
+      id,
+      title: getPanelTitle(panel, id),
       component: panel,
       position: { referenceGroup: props.group },
     });

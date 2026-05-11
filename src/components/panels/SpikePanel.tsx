@@ -1,17 +1,30 @@
-import { spikeGroupsAtom } from "@/jotai";
+import {
+  graphPanelsAtom,
+  spikeGroupsByGraphPanelAtom,
+} from "@/jotai";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useAtom } from "jotai";
+import type { IDockviewPanelProps } from "dockview";
+import { useAtom, useAtomValue } from "jotai";
 import { Download, Trash2 } from "lucide-react";
 import Papa from "papaparse";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ManualSpikeSelection from "../ManualSpikeSelection";
 import RasterSpikePlot from "../RasterSpikePlot";
 import { Button } from "../ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 type SpikeRow = {
   channel: string;
@@ -83,8 +96,39 @@ const columns = [
   }),
 ];
 
-function SpikePanel() {
-  const [spikeGroups, setSpikeGroups] = useAtom(spikeGroupsAtom);
+function SpikePanel({ props }: { props: IDockviewPanelProps }) {
+  const graphPanels = useAtomValue(graphPanelsAtom);
+  const [selectedGraphPanelId, setSelectedGraphPanelId] = useState("");
+  const [spikeGroupsByGraphPanel, setSpikeGroupsByGraphPanel] = useAtom(
+    spikeGroupsByGraphPanelAtom,
+  );
+  const spikeGroups = useMemo(
+    () => spikeGroupsByGraphPanel[selectedGraphPanelId] ?? [],
+    [selectedGraphPanelId, spikeGroupsByGraphPanel],
+  );
+
+  useEffect(() => {
+    if (!selectedGraphPanelId && graphPanels.length > 0) {
+      setSelectedGraphPanelId(graphPanels[0].id);
+      return;
+    }
+
+    if (
+      selectedGraphPanelId &&
+      graphPanels.length > 0 &&
+      !graphPanels.some((panel) => panel.id === selectedGraphPanelId)
+    ) {
+      setSelectedGraphPanelId(graphPanels[0].id);
+    }
+  }, [graphPanels, selectedGraphPanelId, setSelectedGraphPanelId]);
+
+  useEffect(() => {
+    if (!selectedGraphPanelId) {
+      return;
+    }
+
+    props.api.setTitle(`Spike ${selectedGraphPanelId.slice(0, 5)}`);
+  }, [props.api, selectedGraphPanelId]);
 
   const rows = useMemo(() => {
     return spikeGroups.map((group) => ({
@@ -119,8 +163,9 @@ function SpikePanel() {
   });
 
   function deleteSpike(groupIndex: number, spikeIndex: number) {
-    setSpikeGroups((currentGroups) =>
-      currentGroups
+    setSpikeGroupsByGraphPanel((currentGroupsByPanel) => {
+      const currentGroups = currentGroupsByPanel[selectedGraphPanelId] ?? [];
+      const nextSelectedGroups = currentGroups
         .map((group, currentGroupIndex) => {
           if (currentGroupIndex !== groupIndex) {
             return group;
@@ -142,13 +187,44 @@ function SpikePanel() {
             ),
           };
         })
-        .filter((group) => group.values.length > 0),
-    );
+        .filter((group) => group.values.length > 0);
+
+      return {
+        ...currentGroupsByPanel,
+        [selectedGraphPanelId]: nextSelectedGroups,
+      };
+    });
   }
 
   return (
     <div className="panel-surface">
-      <ManualSpikeSelection />
+      <section className="border-b bg-card/40 p-4 text-card-foreground">
+        <div className="grid max-w-64 gap-1">
+          <label className="text-sm font-medium" htmlFor="spike-graph-panel">
+            Graph panel
+          </label>
+          <Select
+            disabled={graphPanels.length === 0}
+            onValueChange={setSelectedGraphPanelId}
+            value={selectedGraphPanelId}
+          >
+            <SelectTrigger id="spike-graph-panel">
+              <SelectValue placeholder="Select graph" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Graph Panels</SelectLabel>
+                {graphPanels.map((panel) => (
+                  <SelectItem key={panel.id} value={panel.id}>
+                    {panel.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </section>
+      <ManualSpikeSelection selectedGraphPanelId={selectedGraphPanelId} />
       {spikeGroups.length > 0 && rows ? (
         <div>
           <div className="p-4 overflow-x-auto">

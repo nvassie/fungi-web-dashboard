@@ -111,7 +111,7 @@ function Graph({ width, height }: GraphProps) {
   useEffect(() => {
     const plot = plotRef.current;
 
-    if (!plot || !manualSelection.enabled) {
+    if (!plot || !manualSelection.enabled || manualSelection.graphPanelId) {
       return;
     }
 
@@ -149,7 +149,11 @@ function Graph({ width, height }: GraphProps) {
     return () => {
       activePlot.over.removeEventListener("click", handleGraphClick);
     };
-  }, [manualSelection.enabled, setManualSelection]);
+  }, [
+    manualSelection.enabled,
+    manualSelection.graphPanelId,
+    setManualSelection,
+  ]);
 
   function zoomGraph(multiplier: number) {
     const plot = plotRef.current;

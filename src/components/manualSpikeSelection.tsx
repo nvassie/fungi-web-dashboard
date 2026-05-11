@@ -1,9 +1,9 @@
 import {
-  availableSpikeChannelsAtom,
+  availableSpikeChannelsByGraphPanelAtom,
   manualSpikeSelectionAtom,
-  spikeGroupsAtom,
+  spikeGroupsByGraphPanelAtom,
 } from "@/jotai";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -48,10 +48,28 @@ function formatUnixSecondsAsTime(unixSeconds: number) {
   });
 }
 
-export default function ManualSpikeSelection() {
-  const [spikeGroups, setSpikeGroups] = useAtom(spikeGroupsAtom);
+type ManualSpikeSelectionProps = {
+  selectedGraphPanelId: string;
+};
+
+export default function ManualSpikeSelection({
+  selectedGraphPanelId,
+}: ManualSpikeSelectionProps) {
+  const [spikeGroupsByGraphPanel, setSpikeGroupsByGraphPanel] = useAtom(
+    spikeGroupsByGraphPanelAtom,
+  );
+  const spikeGroups = useMemo(
+    () => spikeGroupsByGraphPanel[selectedGraphPanelId] ?? [],
+    [selectedGraphPanelId, spikeGroupsByGraphPanel],
+  );
   const [graphSelection, setGraphSelection] = useAtom(manualSpikeSelectionAtom);
-  const [availableChannels] = useAtom(availableSpikeChannelsAtom);
+  const availableChannelsByGraphPanel = useAtomValue(
+    availableSpikeChannelsByGraphPanelAtom,
+  );
+  const availableChannels = useMemo(
+    () => availableChannelsByGraphPanel[selectedGraphPanelId] ?? [],
+    [availableChannelsByGraphPanel, selectedGraphPanelId],
+  );
   const channels = useMemo(() => {
     const spikeGroupChannels = spikeGroups.map((group) => group.channel);
     return Array.from(new Set([...availableChannels, ...spikeGroupChannels]));
@@ -86,6 +104,11 @@ export default function ManualSpikeSelection() {
       return;
     }
 
+    if (!selectedGraphPanelId) {
+      setError("Select a graph panel before adding a spike.");
+      return;
+    }
+
     if (startSeconds === null || endSeconds === null) {
       setError("Enter a valid start and end time.");
       return;
@@ -98,7 +121,8 @@ export default function ManualSpikeSelection() {
 
     const duration = endSeconds - startSeconds;
 
-    setSpikeGroups((currentGroups) => {
+    setSpikeGroupsByGraphPanel((currentGroupsByPanel) => {
+      const currentGroups = currentGroupsByPanel[selectedGraphPanelId] ?? [];
       const groupExists = currentGroups.some(
         (group) => group.channel === channel,
       );
@@ -115,7 +139,7 @@ export default function ManualSpikeSelection() {
             },
           ];
 
-      return nextGroups.map((group) => {
+      const nextSelectedGroups = nextGroups.map((group) => {
         if (group.channel !== channel) {
           return group;
         }
@@ -128,6 +152,11 @@ export default function ManualSpikeSelection() {
           startTimes: [...group.startTimes, formatTime(startTime)],
         };
       });
+
+      return {
+        ...currentGroupsByPanel,
+        [selectedGraphPanelId]: nextSelectedGroups,
+      };
     });
 
     setStartTime("");
@@ -135,6 +164,7 @@ export default function ManualSpikeSelection() {
     setError("");
     setGraphSelection((currentSelection) => ({
       enabled: currentSelection.enabled,
+      graphPanelId: selectedGraphPanelId,
     }));
   }
 
@@ -198,9 +228,11 @@ export default function ManualSpikeSelection() {
         </Button>
 
         <Button
+          disabled={!selectedGraphPanelId}
           onClick={() =>
             setGraphSelection((currentSelection) => ({
               enabled: !currentSelection.enabled,
+              graphPanelId: selectedGraphPanelId,
             }))
           }
           type="button"
@@ -216,6 +248,7 @@ export default function ManualSpikeSelection() {
             setError("");
             setGraphSelection((currentSelection) => ({
               enabled: currentSelection.enabled,
+              graphPanelId: selectedGraphPanelId,
             }));
           }}
           type="button"

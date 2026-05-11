@@ -5,10 +5,12 @@ import { Button } from "../ui/button";
 import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
-  availableSpikeChannelsAtom,
+  availableSpikeChannelsByGraphPanelAtom,
   graphIdsAtom,
+  graphPanelsAtom,
   manualSpikeSelectionAtom,
-  spikeGroupsAtom,
+  spikeGroupsByGraphPanelAtom,
+  type SpikeGroup,
   userCustomFunctionGroupsAtom,
   userCustomFunctionsRunOrderAtom,
   userSpikeFunctionsAtom,
@@ -44,14 +46,6 @@ type GraphSeries = {
   label: string;
   stroke: string;
   width: number;
-};
-
-type SpikeGroup = {
-  channel: string;
-  times: number[][];
-  values: number[][];
-  durations: number[];
-  startTimes: string[];
 };
 
 type SpikeDetectionResult = {
@@ -110,12 +104,23 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const [headers, setHeaders] = useState<string[]>([]);
   const [headerSeries, setHeaderSeries] = useState<GraphSeries[]>([]);
   const [graphIds, setGraphIds] = useAtom(graphIdsAtom);
-  const [spikeGroups, setSpikeGroups] = useAtom(spikeGroupsAtom);
+  const panelId = props.api.id;
+  const panelName = props.api.title ?? `Graph ${panelId.slice(0, 5)}`;
+  const [, setGraphPanels] = useAtom(graphPanelsAtom);
+  const [spikeGroupsByGraphPanel, setSpikeGroupsByGraphPanel] = useAtom(
+    spikeGroupsByGraphPanelAtom,
+  );
+  const currentSpikeGroups = useMemo(
+    () => spikeGroupsByGraphPanel[panelId] ?? [],
+    [panelId, spikeGroupsByGraphPanel],
+  );
   const userSpikeFunctions = useAtomValue(userSpikeFunctionsAtom);
   const [manualSelection, setManualSelection] = useAtom(
     manualSpikeSelectionAtom,
   );
-  const setAvailableSpikeChannels = useSetAtom(availableSpikeChannelsAtom);
+  const setAvailableSpikeChannelsByGraphPanel = useSetAtom(
+    availableSpikeChannelsByGraphPanelAtom,
+  );
   const userCustomFunctionGroups = useAtomValue(userCustomFunctionGroupsAtom);
   const userCustomFunctionsRunOrder = useAtomValue(
     userCustomFunctionsRunOrderAtom,
@@ -175,12 +180,12 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     [userCustomFunctionGroups, userCustomFunctionsRunOrder],
   );
   const manualSpikeGraphData = useMemo(
-    () => buildManualSpikeGraphData(chartData, headers, spikeGroups),
-    [chartData, headers, spikeGroups],
+    () => buildManualSpikeGraphData(chartData, headers, currentSpikeGroups),
+    [chartData, currentSpikeGroups, headers],
   );
   const automaticSpikeGraphData = useMemo(
-    () => buildAutomaticSpikeGraphData(chartData, headers, spikeGroups),
-    [chartData, headers, spikeGroups],
+    () => buildAutomaticSpikeGraphData(chartData, headers, currentSpikeGroups),
+    [chartData, currentSpikeGroups, headers],
   );
   const visibleChartData = useMemo(
     () => [
@@ -209,6 +214,24 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
       ],
     };
   }, [automaticSpikeGraphData.series, graphProps, manualSpikeGraphData.series]);
+
+  useEffect(() => {
+    setGraphPanels((currentPanels) => {
+      const nextPanel = { id: panelId, name: panelName };
+      const existingIndex = currentPanels.findIndex(
+        (panel) => panel.id === panelId,
+      );
+
+      if (existingIndex === -1) {
+        return [...currentPanels, nextPanel];
+      }
+
+      return currentPanels.map((panel) =>
+        panel.id === panelId ? nextPanel : panel,
+      );
+    });
+
+  }, [panelId, panelName, setGraphPanels]);
 
   useEffect(() => {
     return () => {
@@ -263,9 +286,15 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
           setChartData(processedColumns);
 
           const headersWithNoTime = headers.slice(1);
-          setAvailableSpikeChannels((currentChannels) =>
-            Array.from(new Set([...currentChannels, ...headersWithNoTime])),
-          );
+          setAvailableSpikeChannelsByGraphPanel((currentChannelsByPanel) => ({
+            ...currentChannelsByPanel,
+            [panelId]: Array.from(
+              new Set([
+                ...(currentChannelsByPanel[panelId] ?? []),
+                ...headersWithNoTime,
+              ]),
+            ),
+          }));
 
           const tempHeaderSeries = headersWithNoTime.map((header, index) => ({
             label: header,
@@ -320,9 +349,11 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     fileContent,
     fileInfo?.date,
     fileInfo?.startTime,
+    panelId,
     props.api.height,
     props.api.width,
     runCustomFunctions,
+    setAvailableSpikeChannelsByGraphPanel,
   ]);
 
   useEffect(() => {
@@ -350,7 +381,13 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
               chartData[j + 1],
               fileInfo,
             );
-            setSpikeGroups((prev) => [...prev, workerResult]);
+            setSpikeGroupsByGraphPanel((currentGroupsByPanel) => ({
+              ...currentGroupsByPanel,
+              [panelId]: [
+                ...(currentGroupsByPanel[panelId] ?? []),
+                workerResult,
+              ],
+            }));
           }
         }
 
@@ -368,7 +405,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     fileInfo,
     headerSeries,
     headers,
-    setSpikeGroups,
+    panelId,
+    setSpikeGroupsByGraphPanel,
     spikeRunner,
     toggleSpikes,
     userCode,
@@ -400,7 +438,11 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   useEffect(() => {
     const plot = plotRef.current;
 
-    if (!plot || !manualSelection.enabled) {
+    if (
+      !plot ||
+      !manualSelection.enabled ||
+      manualSelection.graphPanelId !== panelId
+    ) {
       return;
     }
 
@@ -418,6 +460,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
         ) {
           return {
             enabled: true,
+            graphPanelId: panelId,
             startTime: clickedTime,
           };
         }
@@ -427,6 +470,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
 
         return {
           enabled: true,
+          graphPanelId: panelId,
           startTime,
           endTime,
         };
@@ -438,7 +482,12 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     return () => {
       activePlot.over.removeEventListener("click", handleGraphClick);
     };
-  }, [manualSelection.enabled, setManualSelection]);
+  }, [
+    manualSelection.enabled,
+    manualSelection.graphPanelId,
+    panelId,
+    setManualSelection,
+  ]);
 
   function zoomGraph(multiplier: number) {
     const plot = plotRef.current;
@@ -562,9 +611,23 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                   setLoading(false);
                   setRunCustomFunctions(false);
                   setGraphIds([]);
-                  setSpikeGroups([]);
-                  setAvailableSpikeChannels([]);
-                  setManualSelection({ enabled: false });
+                  setSpikeGroupsByGraphPanel((currentGroupsByPanel) => {
+                    const nextGroupsByPanel = { ...currentGroupsByPanel };
+                    delete nextGroupsByPanel[panelId];
+                    return nextGroupsByPanel;
+                  });
+                  setAvailableSpikeChannelsByGraphPanel(
+                    (currentChannelsByPanel) => {
+                      const nextChannelsByPanel = { ...currentChannelsByPanel };
+                      delete nextChannelsByPanel[panelId];
+                      return nextChannelsByPanel;
+                    },
+                  );
+                  setManualSelection((currentSelection) =>
+                    currentSelection.graphPanelId === panelId
+                      ? { enabled: false }
+                      : currentSelection,
+                  );
                   chartRef.current = null;
                   plotRef.current = null;
                 }}
