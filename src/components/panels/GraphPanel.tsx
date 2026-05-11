@@ -649,7 +649,10 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
       ) : (
         <div>
           <p className="empty-state">
-            No data available, please an electrical signals file.
+            No data available, please upload an electrical signals file.
+            <br />
+            Use the file format name_yy-mm-dd_hhmm.lvm to have the fields
+            auto-fill.
           </p>
           <Upload
             fileInfo={fileInfo}
