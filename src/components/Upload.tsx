@@ -31,6 +31,7 @@ export default function Upload({
   const [stringHeaders, setStringHeaders] = useState<string>();
   const [extension, setExtension] = useState<string>();
   const [fileHasHeaders, setFileHasHeaders] = useState<boolean>(false);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -51,6 +52,7 @@ export default function Upload({
       setStartTime(`${hour}:${min}`);
       setDate(`20${tempDate}`);
       setFile(tempFile);
+      setUploadErrors([]);
     }
   };
 
@@ -59,12 +61,41 @@ export default function Upload({
       return;
     }
 
+    const missingFields: string[] = [];
+    const trimmedHeaders = stringHeaders?.trim();
+    const parsedHeaders =
+      trimmedHeaders?.split(",").map((header) => header.trim()) ?? [];
+
+    if (!startTime) {
+      missingFields.push("Recording start time is required.");
+    }
+
+    if (!date) {
+      missingFields.push("Recording date is required.");
+    }
+
+    if (!trimmedHeaders) {
+      missingFields.push(
+        fileHasHeaders
+          ? "Headers could not be read from the file."
+          : "Headers are required.",
+      );
+    } else if (parsedHeaders.some((header) => !header)) {
+      missingFields.push("Headers must not contain empty values.");
+    }
+
+    if (missingFields.length > 0) {
+      setUploadErrors(missingFields);
+      return;
+    }
+
+    setUploadErrors([]);
     const reader = new FileReader();
 
     reader.onload = (event) => {
       if (
         event.target &&
-        (stringHeaders || fileHasHeaders) &&
+        trimmedHeaders &&
         file &&
         extension &&
         startTime &&
@@ -84,10 +115,7 @@ export default function Upload({
           startTime,
           date,
         };
-        if (stringHeaders) {
-          const headers = stringHeaders.split(",");
-          setHeaders(headers);
-        }
+        setHeaders(parsedHeaders);
         setFileInfo(tempFileInfo);
         setFileContent(content);
       }
@@ -169,7 +197,7 @@ export default function Upload({
                 </p>
                 <Input
                   type="time"
-                  value={startTime}
+                  value={startTime ?? ""}
                   onChange={(e) => setStartTime(e.target.value)}
                   placeholder="Set start time"
                 />
@@ -178,7 +206,7 @@ export default function Upload({
                 <p className="text-sm text-muted-foreground">Recording date</p>
                 <Input
                   type="date"
-                  value={date}
+                  value={date ?? ""}
                   onChange={(e) => setDate(e.target.value)}
                   placeholder="Set date"
                 />
@@ -197,7 +225,7 @@ export default function Upload({
                 <Input
                   disabled={fileHasHeaders}
                   type="text"
-                  value={stringHeaders}
+                  value={stringHeaders ?? ""}
                   onChange={(e) => setStringHeaders(e.target.value)}
                   placeholder="Enter file headers."
                 />
@@ -216,6 +244,19 @@ export default function Upload({
               <div className="flex gap-3 justify-center">
                 <Loader className="animate-spin" />
                 <p>Loading</p>
+              </div>
+            )}
+            {uploadErrors.length > 0 && (
+              <div
+                className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                role="alert"
+              >
+                <p className="font-medium">Upload blocked</p>
+                <ul className="mt-1 list-disc pl-5">
+                  {uploadErrors.map((error) => (
+                    <li key={error}>{error}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
