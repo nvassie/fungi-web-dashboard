@@ -42,7 +42,6 @@ export default function Upload({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const tempFile = e.target.files[0];
-      // maybe move to regex
       const tempExtension = tempFile.name.slice(-4);
       setExtension(tempExtension);
       const tempStartTime = tempFile.name.slice(-8, -4);

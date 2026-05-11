@@ -197,7 +197,7 @@ function Graph({ width, height }: GraphProps) {
   }
 
   return (
-    <div className="mb-3">
+    <div>
       {chartData.length > 0 ? (
         <div>
           <div className="chart-shell" ref={chartRef} />
