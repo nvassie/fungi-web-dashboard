@@ -238,15 +238,10 @@ export default function UserSettingsPanel() {
         </Dialog>
       </div>
       {userCustomFunctionGroups && <FunctionOrder />}
-      {userCustomFunctionGroups && (
-        <>
-          {userCustomFunctionGroups.map((group) => (
-            <FunctionCard id={group.id} key={group.id} />
-          ))}
-
-          <div className="mb-15" />
-        </>
-      )}
+      {userCustomFunctionGroups &&
+        userCustomFunctionGroups.map((group) => (
+          <FunctionCard id={group.id} key={group.id} />
+        ))}
     </div>
   );
 }

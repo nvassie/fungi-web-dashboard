@@ -28,7 +28,7 @@ export default function RasterSpikePlot({ rows }: RasterSpikePlotProps) {
   }, [rows]);
 
   return (
-    <div className="mb-15">
+    <div>
       <Plot
         data={[
           {

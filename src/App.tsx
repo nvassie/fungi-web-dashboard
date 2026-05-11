@@ -99,14 +99,17 @@ export default function App() {
   return (
     <>
       <DevTools />
-      <div className="App overflow-y-hidden">
+      <div className="App h-screen flex flex-col overflow-hidden">
         <TopBar saveLayout={saveLayout} />
-        <DockviewReact
-          className="dockview-theme-dark"
-          onReady={onReady}
-          components={components}
-          leftHeaderActionsComponent={LeftComponent}
-        />
+
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <DockviewReact
+            className="dockview-theme-dark h-full"
+            onReady={onReady}
+            components={components}
+            leftHeaderActionsComponent={LeftComponent}
+          />
+        </div>
       </div>
     </>
   );
