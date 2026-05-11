@@ -197,10 +197,10 @@ function Graph({ width, height }: GraphProps) {
   }
 
   return (
-    <div>
+    <div className="mb-3">
       {chartData.length > 0 ? (
         <div>
-          <div className="chart-shell" ref={chartRef} />
+          <div className="text-white" ref={chartRef} />
           <div className="mt-3 flex justify-center gap-2">
             <Button
               aria-label="Zoom in"
