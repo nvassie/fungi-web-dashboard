@@ -71,21 +71,10 @@ export default function AddPanels(props: IDockviewHeaderActionsProps) {
           </Button>
           <Button
             className="justify-start"
-            onClick={() => onClick("graphsetting")}
-          >
-            <FileChartLine />
-            Graph Settings
-          </Button>
-          <Button
-            className="justify-start"
             onClick={() => onClick("usersetting")}
           >
             <Settings />
             User Settings
-          </Button>
-          <Button className="justify-start" onClick={() => onClick("home")}>
-            <FlaskConical />
-            Home Panel
           </Button>
           <Button className="justify-start" onClick={() => onClick("spike")}>
             <ChartLine />

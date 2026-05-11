@@ -10,9 +10,7 @@ import "dockview/dist/styles/dockview.css";
 import GraphPanel from "./components/panels/GraphPanel";
 import TopBar from "./components/TopBar";
 import AddPanels from "./components/AddPanels";
-import TestPanel from "./components/panels/TestPanel";
 import UserSettingsPanel from "./components/panels/UserSettingsPanel";
-import GraphSettingsPanel from "./components/panels/GraphSettingsPanel";
 import { useEffect, useRef, useState } from "react";
 import SpikePanel from "./components/panels/SpikePanel";
 import { DevTools } from "jotai-devtools";
@@ -39,14 +37,8 @@ const components = {
 
     return <GraphPanel props={props} width={panelWidth} height={panelHeight} />;
   },
-  graphsetting: () => {
-    return <GraphSettingsPanel />;
-  },
   usersetting: () => {
     return <UserSettingsPanel />;
-  },
-  home: () => {
-    return <TestPanel />;
   },
   spike: (props: IDockviewPanelProps) => {
     return <SpikePanel props={props} />;
@@ -72,11 +64,6 @@ export default function App() {
     if (saved) {
       dockviewRef.current.fromJSON(JSON.parse(saved));
     } else {
-      event.api.addPanel({
-        id: "Home",
-        component: "home",
-      });
-
       const graphId = uuidv4();
 
       event.api.addPanel({
