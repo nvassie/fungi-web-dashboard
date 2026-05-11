@@ -44,12 +44,16 @@ export default function Upload({
       const tempFile = e.target.files[0];
       const tempExtension = tempFile.name.slice(-4);
       setExtension(tempExtension);
-      const tempStartTime = tempFile.name.slice(-8, -4);
-      const tempDate = tempFile.name.slice(-17, -9);
-      const hour = tempStartTime.slice(0, 2);
-      const min = tempStartTime.slice(2, 4);
-      setStartTime(`${hour}:${min}`);
-      setDate(`20${tempDate}`);
+      if (tempExtension === ".lvm") {
+        const nameWithoutExtension = tempFile.name.replace(".lvm", "");
+        const parts = nameWithoutExtension.split("_");
+        const tempStartTime = parts[parts.length - 1];
+        const tempDate = parts[parts.length - 2];
+        const hour = tempStartTime.slice(0, 2);
+        const min = tempStartTime.slice(2, 4);
+        setStartTime(`${hour}:${min}`);
+        setDate(`20${tempDate}`);
+      }
       setFile(tempFile);
       setUploadErrors([]);
     }

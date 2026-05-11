@@ -83,7 +83,9 @@ function Sortable({ id, index }: SortableProps) {
               <SelectLabel>{id} Functions</SelectLabel>
               <SelectItem value="None">None</SelectItem>
               {groupFunctions.map((func) => (
-                <SelectItem value={func.name}>{func.name}</SelectItem>
+                <SelectItem key={func.name} value={func.name}>
+                  {func.name}
+                </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
