@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { Button } from "../ui/button";
-import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { LoaderCircle, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   availableSpikeChannelsByGraphPanelAtom,
@@ -79,6 +79,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const [fileContent, setFileContent] = useState<string>();
   const [fileInfo, setFileInfo] = useState<FileInfo>();
   const [loading, setLoading] = useState<boolean>(false);
+  const [spikeLoading, setSpikeLoading] = useState<boolean>(false);
   const [runCustomFunctions, setRunCustomFunctions] = useState(false);
   // const headers = [
   // "Time (seconds)",
@@ -230,7 +231,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
         panel.id === panelId ? nextPanel : panel,
       );
     });
-
   }, [panelId, panelName, setGraphPanels]);
 
   useEffect(() => {
@@ -395,6 +395,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
           ...prev,
           series: [{}, ...headerSeries],
         }));
+        setSpikeLoading(false);
       };
 
       detectSpikes();
@@ -588,9 +589,13 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
               <Button
                 onClick={() => {
                   setToggleSpikes((prev) => !prev);
+                  setSpikeLoading(true);
                 }}
               >
                 Detect Spikes
+                {spikeLoading && (
+                  <LoaderCircle className="w-4 h-4 animate-spin" />
+                )}
               </Button>
               <Button
                 onClick={() => {

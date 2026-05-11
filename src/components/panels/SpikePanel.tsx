@@ -1,7 +1,4 @@
-import {
-  graphPanelsAtom,
-  spikeGroupsByGraphPanelAtom,
-} from "@/jotai";
+import { graphPanelsAtom, spikeGroupsByGraphPanelAtom } from "@/jotai";
 import {
   createColumnHelper,
   flexRender,
