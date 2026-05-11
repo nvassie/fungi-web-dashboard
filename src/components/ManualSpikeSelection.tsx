@@ -170,7 +170,9 @@ export default function ManualSpikeSelection({
 
   return (
     <section className="border-b bg-card/40 p-4 text-card-foreground">
-      <h2 className="mb-3 text-sm font-semibold">Manual Spike Selection</h2>
+      <Label className="mb-3 text-sm font-semibold">
+        Manual Spike Selection
+      </Label>
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <Label htmlFor="manual-spike-channel">Channel</Label>
@@ -268,7 +270,15 @@ export default function ManualSpikeSelection({
           Upload data to be able to manually add spikes.
         </p>
       ) : null}
-      {error ? <p className="mt-2 text-sm text-red-300">{error}</p> : null}
+      {error ? (
+        <div
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive mt-2"
+          role="alert"
+        >
+          <p className="font-medium">Error when adding spike:</p>
+          <li className="ml-5">{error}</li>
+        </div>
+      ) : null}
     </section>
   );
 }

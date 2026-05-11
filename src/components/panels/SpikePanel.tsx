@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Label } from "../ui/label";
 
 type SpikeRow = {
   channel: string;
@@ -197,9 +198,10 @@ function SpikePanel({ props }: { props: IDockviewPanelProps }) {
     <div className="panel-surface">
       <section className="border-b bg-card/40 p-4 text-card-foreground">
         <div className="grid max-w-64 gap-1">
-          <label className="text-sm font-medium" htmlFor="spike-graph-panel">
+          <Label className="text-sm font-semibold" htmlFor="spike-graph-panel">
             Graph panel
-          </label>
+          </Label>
+          <Label className="mb-2">Choose what graph's spikes to view.</Label>
           <Select
             disabled={graphPanels.length === 0}
             onValueChange={setSelectedGraphPanelId}
