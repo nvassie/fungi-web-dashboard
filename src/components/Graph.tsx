@@ -6,32 +6,34 @@ import Upload from "@/components/Upload";
 import { parser } from "@/lib/parsers";
 import { availableSpikeChannelsAtom, manualSpikeSelectionAtom } from "@/jotai";
 import { useAtom, useSetAtom } from "jotai";
-import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { RotateCcw, Trash2, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "./ui/button";
+
+const HEADER_COLOURS = [
+  "white",
+  "red",
+  "blue",
+  "green",
+  "yellow",
+  "purple",
+  "cyan",
+  "pink",
+];
 
 interface GraphProps {
   width: number;
   height: number;
+  onRemove?: () => void;
 }
 
-function Graph({ width, height }: GraphProps) {
+function Graph({ width, height, onRemove }: GraphProps) {
   const chartRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
   const [fileContent, setFileContent] = useState<string>();
   const [fileInfo, setFileInfo] = useState<FileInfo>();
   const [loading, setLoading] = useState<boolean>(false);
   const [chartData, setChartData] = useState<number[][]>([]);
-  const [graphProps, setGraphProps] = useState({});
-  const headerColours = [
-    "white",
-    "red",
-    "blue",
-    "green",
-    "yellow",
-    "purple",
-    "cyan",
-    "pink",
-  ];
+  const [graphProps, setGraphProps] = useState<Partial<uPlot.Options>>({});
   const [headers, setHeaders] = useState<string[]>([]);
   const [manualSelection, setManualSelection] = useAtom(
     manualSpikeSelectionAtom,
@@ -52,7 +54,7 @@ function Graph({ width, height }: GraphProps) {
 
       const tempHeaderSeries = headersWithNoTime.map((header, index) => ({
         label: header,
-        stroke: headerColours[index],
+        stroke: HEADER_COLOURS[index],
         width: 2,
       }));
 
@@ -73,8 +75,10 @@ function Graph({ width, height }: GraphProps) {
             stroke: "white",
             font: "12px Arial",
             grid: { stroke: "#444" },
-            values: (u, ticks) =>
-              ticks.map((t) => new Date(t * 1000).toLocaleTimeString()),
+            values: (_u: uPlot, ticks: number[]) =>
+              ticks.map((t: number) =>
+                new Date(t * 1000).toLocaleTimeString(),
+              ),
             label: "Time",
             labelFont: "14px Arial",
           },
@@ -87,12 +91,17 @@ function Graph({ width, height }: GraphProps) {
         },
       });
     }
-  }, [fileContent, fileInfo, height, width]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileContent, fileInfo, height, setAvailableSpikeChannels, width]);
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || chartData.length === 0) return;
 
-    plotRef.current = new uPlot(graphProps, chartData, chartRef.current);
+    plotRef.current = new uPlot(
+      graphProps as uPlot.Options,
+      chartData as uPlot.AlignedData,
+      chartRef.current,
+    );
 
     return () => {
       plotRef.current?.destroy();
@@ -201,7 +210,7 @@ function Graph({ width, height }: GraphProps) {
       {chartData.length > 0 ? (
         <div>
           <div className="text-white" ref={chartRef} />
-          <div className="mt-3 flex justify-center gap-2">
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
             <Button
               aria-label="Zoom in"
               onClick={() => zoomGraph(0.5)}
@@ -232,11 +241,39 @@ function Graph({ width, height }: GraphProps) {
               <RotateCcw />
               Reset
             </Button>
+            {onRemove ? (
+              <Button
+                aria-label="Remove graph"
+                onClick={onRemove}
+                size="sm"
+                title="Remove graph"
+                type="button"
+                variant="outline"
+              >
+                <Trash2 />
+                Remove
+              </Button>
+            ) : null}
           </div>
         </div>
       ) : (
         <div>
           <p className="empty-state">No data available, please upload data.</p>
+          {onRemove ? (
+            <div className="mb-3 flex justify-center">
+              <Button
+                aria-label="Remove graph"
+                onClick={onRemove}
+                size="sm"
+                title="Remove graph"
+                type="button"
+                variant="outline"
+              >
+                <Trash2 />
+                Remove
+              </Button>
+            </div>
+          ) : null}
           <Upload
             fileInfo={fileInfo}
             setFileInfo={setFileInfo}

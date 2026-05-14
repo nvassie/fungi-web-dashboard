@@ -643,7 +643,16 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             </div>
           </div>
           {graphIds.map((id) => (
-            <Graph key={id} width={width} height={height} />
+            <Graph
+              key={id}
+              width={width}
+              height={height}
+              onRemove={() => {
+                setGraphIds((currentIds) =>
+                  currentIds.filter((currentId) => currentId !== id),
+                );
+              }}
+            />
           ))}
         </div>
       ) : (
