@@ -66,6 +66,17 @@ type SpikeRunner = {
   ) => Promise<SpikeGroup>;
 };
 
+const HEADER_COLOURS = [
+  "white",
+  "red",
+  "blue",
+  "green",
+  "yellow",
+  "purple",
+  "cyan",
+  "pink",
+];
+
 type CustomFunctionRunner = {
   runFunction: (functions: string[], input: number[][]) => Promise<number[][]>;
 };
@@ -81,27 +92,6 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [spikeLoading, setSpikeLoading] = useState<boolean>(false);
   const [runCustomFunctions, setRunCustomFunctions] = useState(false);
-  // const headers = [
-  // "Time (seconds)",
-  // "Pack 0 probe 1",
-  // "Pack 0 probe 2",
-  // "Pack 1 probe 1",
-  // "Pack 1 probe 2",
-  // "Pack 2 probe 1",
-  // "Pack 2 probe 2",
-  // "Pack 3 probe 1",
-  // "Pack 3 probe 2",
-  // ];
-  const headerColours = [
-    "white",
-    "red",
-    "blue",
-    "green",
-    "yellow",
-    "purple",
-    "cyan",
-    "pink",
-  ];
   const [headers, setHeaders] = useState<string[]>([]);
   const [headerSeries, setHeaderSeries] = useState<GraphSeries[]>([]);
   const [graphIds, setGraphIds] = useAtom(graphIdsAtom);
@@ -298,7 +288,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
 
           const tempHeaderSeries = headersWithNoTime.map((header, index) => ({
             label: header,
-            stroke: headerColours[index],
+            stroke: HEADER_COLOURS[index],
             width: 2,
           }));
 

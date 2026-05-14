@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-table";
 import type { IDockviewPanelProps } from "dockview";
 import { useAtom, useAtomValue } from "jotai";
-import { Download, Trash2 } from "lucide-react";
+import { Download, Eye, EyeOff, Trash2 } from "lucide-react";
 import Papa from "papaparse";
 import { useEffect, useMemo, useState } from "react";
 import ManualSpikeSelection from "../ManualSpikeSelection";
@@ -96,10 +96,13 @@ const columns = [
 
 function SpikePanel({ props }: { props: IDockviewPanelProps }) {
   const graphPanels = useAtomValue(graphPanelsAtom);
-  const [selectedGraphPanelId, setSelectedGraphPanelId] = useState("");
+  const [selectedGraphPanelId, setSelectedGraphPanelId] = useState<string>("");
   const [spikeGroupsByGraphPanel, setSpikeGroupsByGraphPanel] = useAtom(
     spikeGroupsByGraphPanelAtom,
   );
+  const [hideIndividualSpikes, setHideIndividualSpikes] =
+    useState<boolean>(false);
+
   const spikeGroups = useMemo(
     () => spikeGroupsByGraphPanel[selectedGraphPanelId] ?? [],
     [selectedGraphPanelId, spikeGroupsByGraphPanel],
@@ -267,62 +270,79 @@ function SpikePanel({ props }: { props: IDockviewPanelProps }) {
             </table>
           </div>
           <div className="p-4 pt-0 overflow-x-auto">
-            <h2 className="mb-3 text-sm font-semibold">Individual Spikes</h2>
-            <table className="w-full min-w-md border-separate border-spacing-0 overflow-hidden rounded-lg border text-sm">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Channel
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Type
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Start Time
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Duration
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Delete
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {spikeDetailRows.map((spike) => (
-                  <tr
-                    key={`${spike.channel}-${spike.groupIndex}-${spike.spikeIndex}`}
-                  >
-                    <td className="border-t px-4 py-3 text-foreground">
-                      {spike.channel}
-                    </td>
-                    <td className="border-t px-4 py-3 text-foreground">
-                      {spike.isManual ? "Manual" : "Automatic"}
-                    </td>
-                    <td className="border-t px-4 py-3 text-foreground">
-                      {spike.startTime}
-                    </td>
-                    <td className="border-t px-4 py-3 text-foreground">
-                      {spike.duration.toFixed(3)}s
-                    </td>
-                    <td className="border-t px-4 py-3 text-foreground">
-                      <Button
-                        aria-label={`Delete ${spike.channel} ${spike.startTime} spike`}
-                        onClick={() =>
-                          deleteSpike(spike.groupIndex, spike.spikeIndex)
-                        }
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                      >
-                        <Trash2 />
-                        Delete
-                      </Button>
-                    </td>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="mb-3 text-sm font-semibold">Individual Spikes</h2>
+              <Button onClick={() => setHideIndividualSpikes((prev) => !prev)}>
+                {hideIndividualSpikes ? (
+                  <div className="flex items-center gap-1">
+                    Unhide
+                    <Eye />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    Hide
+                    <EyeOff />
+                  </div>
+                )}
+              </Button>
+            </div>
+            {!hideIndividualSpikes && (
+              <table className="w-full min-w-md border-separate border-spacing-0 overflow-hidden rounded-lg border text-sm">
+                <thead>
+                  <tr className="bg-muted">
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                      Channel
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                      Start Time
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                      Duration
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                      Delete
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {spikeDetailRows.map((spike) => (
+                    <tr
+                      key={`${spike.channel}-${spike.groupIndex}-${spike.spikeIndex}`}
+                    >
+                      <td className="border-t px-4 py-3 text-foreground">
+                        {spike.channel}
+                      </td>
+                      <td className="border-t px-4 py-3 text-foreground">
+                        {spike.isManual ? "Manual" : "Automatic"}
+                      </td>
+                      <td className="border-t px-4 py-3 text-foreground">
+                        {spike.startTime}
+                      </td>
+                      <td className="border-t px-4 py-3 text-foreground">
+                        {spike.duration.toFixed(3)}s
+                      </td>
+                      <td className="border-t px-4 py-3 text-foreground">
+                        <Button
+                          aria-label={`Delete ${spike.channel} ${spike.startTime} spike`}
+                          onClick={() =>
+                            deleteSpike(spike.groupIndex, spike.spikeIndex)
+                          }
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          <Trash2 />
+                          Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
           <RasterSpikePlot rows={rows} />
         </div>
