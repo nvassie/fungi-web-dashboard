@@ -83,7 +83,6 @@ type CustomFunctionRunner = {
 
 export default function GraphPanel({ props, width, height }: GraphProps) {
   const [chartData, setChartData] = useState<number[][]>([]);
-  const [toggleSpikes, setToggleSpikes] = useState(false);
   const [graphProps, setGraphProps] = useState<Partial<uPlot.Options>>({});
   const chartRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
@@ -92,6 +91,10 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [spikeLoading, setSpikeLoading] = useState<boolean>(false);
   const [runCustomFunctions, setRunCustomFunctions] = useState(false);
+  const [dataRevision, setDataRevision] = useState(0);
+  const [lastSpikeDetectionKey, setLastSpikeDetectionKey] = useState<
+    string | null
+  >(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [headerSeries, setHeaderSeries] = useState<GraphSeries[]>([]);
   const [graphIds, setGraphIds] = useAtom(graphIdsAtom);
@@ -252,6 +255,31 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     [codeRunner, userSpikeFunctions],
   );
 
+  const isManualSpike = useCallback((group: SpikeGroup, index: number) => {
+    return group.values[index]?.length === 0 && group.times[index]?.length === 2;
+  }, []);
+
+  const keepManualSpikeGroups = useCallback(
+    (groups: SpikeGroup[]) => {
+      return groups
+        .map((group) => {
+          const manualIndexes = group.times
+            .map((_, index) => index)
+            .filter((index) => isManualSpike(group, index));
+
+          return {
+            ...group,
+            times: manualIndexes.map((index) => group.times[index]),
+            values: manualIndexes.map((index) => group.values[index]),
+            durations: manualIndexes.map((index) => group.durations[index]),
+            startTimes: manualIndexes.map((index) => group.startTimes[index]),
+          };
+        })
+        .filter((group) => group.times.length > 0);
+    },
+    [isManualSpike],
+  );
+
   useEffect(() => {
     if (fileContent && fileInfo && headers) {
       const processFile = async () => {
@@ -274,6 +302,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
           }
 
           setChartData(processedColumns);
+          setDataRevision((currentRevision) => currentRevision + 1);
+          setLastSpikeDetectionKey(null);
 
           const headersWithNoTime = headers.slice(1);
           setAvailableSpikeChannelsByGraphPanel((currentChannelsByPanel) => ({
@@ -314,7 +344,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                 stroke: "white",
                 font: "12px Arial",
                 grid: { stroke: "#444" },
-                label: "Voltage",
+                label: "Voltage (V)",
                 labelFont: "14px Arial",
               },
             ],
@@ -340,66 +370,75 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     fileInfo?.date,
     fileInfo?.startTime,
     panelId,
-    props.api.height,
-    props.api.width,
     runCustomFunctions,
     setAvailableSpikeChannelsByGraphPanel,
   ]);
 
-  useEffect(() => {
-    if (toggleSpikes && headerSeries) {
-      const detectSpikes = async () => {
-        if (!fileInfo) {
-          return;
+  const detectSpikes = useCallback(async () => {
+    if (!fileInfo || spikeLoading) {
+      return;
+    }
+
+    const detectionKey = `${dataRevision}:${detectionFunction}`;
+
+    if (lastSpikeDetectionKey === detectionKey) {
+      return;
+    }
+
+    setSpikeLoading(true);
+
+    try {
+      const detectedGroups: SpikeGroup[] = [];
+
+      for (let i = 1; i < chartData.length; i += 1) {
+        if (chartData[i].length === 0) {
+          continue;
         }
 
-        const spikesArray: number[][] = [];
-        for (let i = 1; i < chartData.length; i++) {
-          if (chartData[i].length > 0) {
-            const workerResult = await userCode(
-              detectionFunction,
-              chartData[i],
-            );
-            spikesArray.push(workerResult.spike);
-          }
-        }
-        for (let j = 0; j < spikesArray.length; j++) {
-          if (spikesArray[j].length > 0) {
-            const workerResult = await spikeRunner.groupSpikes(
-              headers[j + 1],
-              spikesArray[j],
-              chartData[j + 1],
-              fileInfo,
-            );
-            setSpikeGroupsByGraphPanel((currentGroupsByPanel) => ({
-              ...currentGroupsByPanel,
-              [panelId]: [
-                ...(currentGroupsByPanel[panelId] ?? []),
-                workerResult,
-              ],
-            }));
-          }
+        const workerResult = await userCode(detectionFunction, chartData[i]);
+
+        if (workerResult.spike.length === 0) {
+          continue;
         }
 
-        setGraphProps((prev) => ({
-          ...prev,
-          series: [{}, ...headerSeries],
-        }));
-        setSpikeLoading(false);
-      };
+        const groupedSpikes = await spikeRunner.groupSpikes(
+          headers[i],
+          workerResult.spike,
+          chartData[i],
+          fileInfo,
+        );
 
-      detectSpikes();
+        detectedGroups.push(groupedSpikes);
+      }
+
+      setSpikeGroupsByGraphPanel((currentGroupsByPanel) => ({
+        ...currentGroupsByPanel,
+        [panelId]: [
+          ...keepManualSpikeGroups(currentGroupsByPanel[panelId] ?? []),
+          ...detectedGroups,
+        ],
+      }));
+      setGraphProps((prev) => ({
+        ...prev,
+        series: [{}, ...headerSeries],
+      }));
+      setLastSpikeDetectionKey(detectionKey);
+    } finally {
+      setSpikeLoading(false);
     }
   }, [
     chartData,
+    dataRevision,
     detectionFunction,
     fileInfo,
     headerSeries,
     headers,
+    keepManualSpikeGroups,
+    lastSpikeDetectionKey,
     panelId,
     setSpikeGroupsByGraphPanel,
+    spikeLoading,
     spikeRunner,
-    toggleSpikes,
     userCode,
   ]);
 
@@ -577,10 +616,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                 </SelectContent>
               </Select>
               <Button
-                onClick={() => {
-                  setToggleSpikes((prev) => !prev);
-                  setSpikeLoading(true);
-                }}
+                disabled={spikeLoading}
+                onClick={detectSpikes}
               >
                 Detect Spikes
                 {spikeLoading && (
@@ -601,7 +638,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                   setGraphProps({});
                   setFileContent(undefined);
                   setFileInfo(undefined);
-                  setToggleSpikes(false);
+                  setDataRevision(0);
+                  setLastSpikeDetectionKey(null);
                   setDetectionFunction("default");
                   setLoading(false);
                   setRunCustomFunctions(false);

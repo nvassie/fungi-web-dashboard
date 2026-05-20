@@ -85,7 +85,7 @@ export default function App() {
 
   return (
     <>
-      <DevTools />
+      {/* <DevTools /> */}
       <div className="App h-screen flex flex-col overflow-hidden">
         <TopBar saveLayout={saveLayout} />
 
