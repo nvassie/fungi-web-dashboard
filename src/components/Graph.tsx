@@ -22,11 +22,12 @@ const HEADER_COLOURS = [
 
 interface GraphProps {
   width: number;
-  height: number;
+  chartHeight: number;
+  syncKey: string;
   onRemove?: () => void;
 }
 
-function Graph({ width, height, onRemove }: GraphProps) {
+function Graph({ width, chartHeight, syncKey, onRemove }: GraphProps) {
   const chartRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
   const [fileContent, setFileContent] = useState<string>();
@@ -68,7 +69,7 @@ function Graph({ width, height, onRemove }: GraphProps) {
 
       setGraphProps({
         width: width - 10,
-        height: height * 0.6,
+        height: chartHeight,
         series: [{}, ...tempHeaderSeries],
         axes: [
           {
@@ -86,13 +87,13 @@ function Graph({ width, height, onRemove }: GraphProps) {
         ],
         cursor: {
           sync: {
-            key: "test",
+            key: syncKey,
           },
         },
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fileContent, fileInfo, height, setAvailableSpikeChannels, width]);
+  }, [fileContent, fileInfo, setAvailableSpikeChannels, syncKey, width]);
 
   useEffect(() => {
     if (!chartRef.current || chartData.length === 0) return;
@@ -112,10 +113,10 @@ function Graph({ width, height, onRemove }: GraphProps) {
   useEffect(() => {
     const temp = {
       width: width - 10,
-      height: height * 0.6,
+      height: chartHeight,
     };
     plotRef.current?.setSize(temp);
-  }, [width, height]);
+  }, [chartHeight, width]);
 
   useEffect(() => {
     const plot = plotRef.current;

@@ -6,7 +6,6 @@ import { LoaderCircle, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   availableSpikeChannelsByGraphPanelAtom,
-  graphIdsAtom,
   graphPanelsAtom,
   manualSpikeSelectionAtom,
   spikeGroupsByGraphPanelAtom,
@@ -77,6 +76,10 @@ const HEADER_COLOURS = [
   "pink",
 ];
 
+const DEFAULT_GRAPH_HEIGHT_PERCENT = 60;
+const MIN_GRAPH_HEIGHT_PERCENT = 30;
+const MAX_GRAPH_HEIGHT_PERCENT = 100;
+
 type CustomFunctionRunner = {
   runFunction: (functions: string[], input: number[][]) => Promise<number[][]>;
 };
@@ -92,14 +95,18 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const [spikeLoading, setSpikeLoading] = useState<boolean>(false);
   const [runCustomFunctions, setRunCustomFunctions] = useState(false);
   const [dataRevision, setDataRevision] = useState(0);
+  const [graphHeightPercent, setGraphHeightPercent] = useState(
+    DEFAULT_GRAPH_HEIGHT_PERCENT,
+  );
   const [lastSpikeDetectionKey, setLastSpikeDetectionKey] = useState<
     string | null
   >(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [headerSeries, setHeaderSeries] = useState<GraphSeries[]>([]);
-  const [graphIds, setGraphIds] = useAtom(graphIdsAtom);
   const panelId = props.api.id;
   const panelName = props.api.title ?? `Graph ${panelId.slice(0, 5)}`;
+  const graphSyncKey = `graph-panel-${panelId}`;
+  const [graphIds, setGraphIds] = useState<string[]>([]);
   const [, setGraphPanels] = useAtom(graphPanelsAtom);
   const [spikeGroupsByGraphPanel, setSpikeGroupsByGraphPanel] = useAtom(
     spikeGroupsByGraphPanelAtom,
@@ -208,6 +215,10 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
       ],
     };
   }, [automaticSpikeGraphData.series, graphProps, manualSpikeGraphData.series]);
+  const graphHeight = useMemo(
+    () => height * (graphHeightPercent / 100),
+    [graphHeightPercent, height],
+  );
 
   useEffect(() => {
     setGraphPanels((currentPanels) => {
@@ -326,7 +337,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
 
           setGraphProps({
             width: props.api.width - 10,
-            height: props.api.height * 0.6,
+            height: graphHeight,
             series: [{}, ...tempHeaderSeries],
             axes: [
               {
@@ -350,7 +361,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             ],
             cursor: {
               sync: {
-                key: "test",
+                key: graphSyncKey,
               },
             },
           });
@@ -369,6 +380,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     fileContent,
     fileInfo?.date,
     fileInfo?.startTime,
+    graphSyncKey,
     panelId,
     runCustomFunctions,
     setAvailableSpikeChannelsByGraphPanel,
@@ -460,10 +472,10 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   useEffect(() => {
     const temp = {
       width: width - 10,
-      height: height * 0.6,
+      height: graphHeight,
     };
     plotRef.current?.setSize(temp);
-  }, [width, height]);
+  }, [graphHeight, width]);
 
   useEffect(() => {
     const plot = plotRef.current;
@@ -567,6 +579,23 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
           <div>
             <div className="text-white" ref={chartRef} />
             <div className="mt-3 flex flex-wrap justify-center gap-3">
+              <label className="flex items-center gap-2 text-sm text-white">
+                Height
+                <input
+                  aria-label="Graph height"
+                  className="h-2 w-36 cursor-pointer accent-primary"
+                  max={MAX_GRAPH_HEIGHT_PERCENT}
+                  min={MIN_GRAPH_HEIGHT_PERCENT}
+                  onChange={(event) =>
+                    setGraphHeightPercent(Number(event.target.value))
+                  }
+                  type="range"
+                  value={graphHeightPercent}
+                />
+                <span className="w-9 text-right tabular-nums">
+                  {graphHeightPercent}%
+                </span>
+              </label>
               <div className="flex gap-2">
                 <Button
                   aria-label="Zoom in"
@@ -639,6 +668,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                   setFileContent(undefined);
                   setFileInfo(undefined);
                   setDataRevision(0);
+                  setGraphHeightPercent(DEFAULT_GRAPH_HEIGHT_PERCENT);
                   setLastSpikeDetectionKey(null);
                   setDetectionFunction("default");
                   setLoading(false);
@@ -674,7 +704,8 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
             <Graph
               key={id}
               width={width}
-              height={height}
+              chartHeight={graphHeight}
+              syncKey={graphSyncKey}
               onRemove={() => {
                 setGraphIds((currentIds) =>
                   currentIds.filter((currentId) => currentId !== id),

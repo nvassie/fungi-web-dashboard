@@ -1,8 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
-export const graphIdsAtom = atom<string[]>([]);
-
 export type SpikeGroup = {
   channel: string;
   times: number[][];
