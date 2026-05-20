@@ -6,6 +6,7 @@ import { LoaderCircle, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   availableSpikeChannelsByGraphPanelAtom,
+  graphDataByGraphPanelAtom,
   graphPanelsAtom,
   manualSpikeSelectionAtom,
   spikeGroupsByGraphPanelAtom,
@@ -108,6 +109,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   const graphSyncKey = `graph-panel-${panelId}`;
   const [graphIds, setGraphIds] = useState<string[]>([]);
   const [, setGraphPanels] = useAtom(graphPanelsAtom);
+  const setGraphDataByGraphPanel = useSetAtom(graphDataByGraphPanelAtom);
   const [spikeGroupsByGraphPanel, setSpikeGroupsByGraphPanel] = useAtom(
     spikeGroupsByGraphPanelAtom,
   );
@@ -220,6 +222,35 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
     [graphHeightPercent, height],
   );
 
+  const updateAdditionalGraphData = useCallback(
+    (
+      graphId: string,
+      data: { chartData: number[][]; headers: string[] } | undefined,
+    ) => {
+      setGraphDataByGraphPanel((currentDataByPanel) => {
+        const currentPanelData = currentDataByPanel[panelId] ?? {
+          additional: {},
+        };
+        const nextAdditional = { ...currentPanelData.additional };
+
+        if (data) {
+          nextAdditional[graphId] = data;
+        } else {
+          delete nextAdditional[graphId];
+        }
+
+        return {
+          ...currentDataByPanel,
+          [panelId]: {
+            ...currentPanelData,
+            additional: nextAdditional,
+          },
+        };
+      });
+    },
+    [panelId, setGraphDataByGraphPanel],
+  );
+
   useEffect(() => {
     setGraphPanels((currentPanels) => {
       const nextPanel = { id: panelId, name: panelName };
@@ -267,7 +298,9 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
   );
 
   const isManualSpike = useCallback((group: SpikeGroup, index: number) => {
-    return group.values[index]?.length === 0 && group.times[index]?.length === 2;
+    return (
+      group.values[index]?.length === 0 && group.times[index]?.length === 2
+    );
   }, []);
 
   const keepManualSpikeGroups = useCallback(
@@ -313,6 +346,19 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
           }
 
           setChartData(processedColumns);
+          setGraphDataByGraphPanel((currentDataByPanel) => {
+            const currentPanelData = currentDataByPanel[panelId] ?? {
+              additional: {},
+            };
+
+            return {
+              ...currentDataByPanel,
+              [panelId]: {
+                ...currentPanelData,
+                primary: { chartData: processedColumns, headers },
+              },
+            };
+          });
           setDataRevision((currentRevision) => currentRevision + 1);
           setLastSpikeDetectionKey(null);
 
@@ -644,10 +690,7 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Button
-                disabled={spikeLoading}
-                onClick={detectSpikes}
-              >
+              <Button disabled={spikeLoading} onClick={detectSpikes}>
                 Detect Spikes
                 {spikeLoading && (
                   <LoaderCircle className="w-4 h-4 animate-spin" />
@@ -674,6 +717,11 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
                   setLoading(false);
                   setRunCustomFunctions(false);
                   setGraphIds([]);
+                  setGraphDataByGraphPanel((currentDataByPanel) => {
+                    const nextDataByPanel = { ...currentDataByPanel };
+                    delete nextDataByPanel[panelId];
+                    return nextDataByPanel;
+                  });
                   setSpikeGroupsByGraphPanel((currentGroupsByPanel) => {
                     const nextGroupsByPanel = { ...currentGroupsByPanel };
                     delete nextGroupsByPanel[panelId];
@@ -706,7 +754,9 @@ export default function GraphPanel({ props, width, height }: GraphProps) {
               width={width}
               chartHeight={graphHeight}
               syncKey={graphSyncKey}
+              onDataChange={(data) => updateAdditionalGraphData(id, data)}
               onRemove={() => {
+                updateAdditionalGraphData(id, undefined);
                 setGraphIds((currentIds) =>
                   currentIds.filter((currentId) => currentId !== id),
                 );

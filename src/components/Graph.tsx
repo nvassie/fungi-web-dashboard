@@ -4,7 +4,11 @@ import "uplot/dist/uPlot.min.css";
 import type { FileInfo } from "@/types";
 import Upload from "@/components/Upload";
 import { parser } from "@/lib/parsers";
-import { availableSpikeChannelsAtom, manualSpikeSelectionAtom } from "@/jotai";
+import {
+  availableSpikeChannelsAtom,
+  manualSpikeSelectionAtom,
+  type GraphDataRecord,
+} from "@/jotai";
 import { useAtom, useSetAtom } from "jotai";
 import { RotateCcw, Trash2, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "./ui/button";
@@ -25,9 +29,16 @@ interface GraphProps {
   chartHeight: number;
   syncKey: string;
   onRemove?: () => void;
+  onDataChange?: (data: GraphDataRecord | undefined) => void;
 }
 
-function Graph({ width, chartHeight, syncKey, onRemove }: GraphProps) {
+function Graph({
+  width,
+  chartHeight,
+  syncKey,
+  onRemove,
+  onDataChange,
+}: GraphProps) {
   const chartRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
   const [fileContent, setFileContent] = useState<string>();
@@ -40,12 +51,18 @@ function Graph({ width, chartHeight, syncKey, onRemove }: GraphProps) {
     manualSpikeSelectionAtom,
   );
   const setAvailableSpikeChannels = useSetAtom(availableSpikeChannelsAtom);
+  const onDataChangeRef = useRef(onDataChange);
+
+  useEffect(() => {
+    onDataChangeRef.current = onDataChange;
+  }, [onDataChange]);
 
   useEffect(() => {
     if (fileContent && fileInfo) {
       const columns = parser(fileContent, fileInfo, headers, setHeaders);
 
       setChartData(columns);
+      onDataChangeRef.current?.({ chartData: columns, headers });
       setLoading(false);
 
       const headersWithNoTime = headers.slice(1);
@@ -77,9 +94,7 @@ function Graph({ width, chartHeight, syncKey, onRemove }: GraphProps) {
             font: "12px Arial",
             grid: { stroke: "#444" },
             values: (_u: uPlot, ticks: number[]) =>
-              ticks.map((t: number) =>
-                new Date(t * 1000).toLocaleTimeString(),
-              ),
+              ticks.map((t: number) => new Date(t * 1000).toLocaleTimeString()),
             label: "Time",
             labelFont: "14px Arial",
           },
@@ -94,6 +109,12 @@ function Graph({ width, chartHeight, syncKey, onRemove }: GraphProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileContent, fileInfo, setAvailableSpikeChannels, syncKey, width]);
+
+  useEffect(() => {
+    return () => {
+      onDataChangeRef.current?.(undefined);
+    };
+  }, []);
 
   useEffect(() => {
     if (!chartRef.current || chartData.length === 0) return;

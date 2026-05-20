@@ -1,4 +1,9 @@
-import { graphPanelsAtom, spikeGroupsByGraphPanelAtom } from "@/jotai";
+import {
+  graphDataByGraphPanelAtom,
+  graphPanelsAtom,
+  spikeGroupsByGraphPanelAtom,
+  type GraphDataRecord,
+} from "@/jotai";
 import {
   createColumnHelper,
   flexRender,
@@ -42,14 +47,98 @@ type SpikeDetailRow = {
   startTime: string;
 };
 
-function downloadSpikeRow(row: SpikeRow) {
-  const csvRows = row.values.map((spikeValues, spikeIndex) => ({
-    channel: row.channel,
-    spikeIndex: spikeIndex + 1,
-    duration: row.durations[spikeIndex] ?? "",
-    startTime: row.startTimes[spikeIndex] ?? "",
-    values: spikeValues.join(", "),
-  }));
+type AdditionalGraphExport = {
+  label: string;
+  data: GraphDataRecord;
+};
+
+function timeOfDaySeconds(unixSeconds: number) {
+  const date = new Date(unixSeconds * 1000);
+  return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+}
+
+function valuesAtTimes(
+  graphData: GraphDataRecord,
+  unixTimes: (number | undefined)[],
+  fallbackIndexes: number[],
+) {
+  const timeData = graphData.chartData[0] ?? [];
+  const timeIndexes = new Map<number, number>();
+
+  timeData.forEach((time, index) => {
+    timeIndexes.set(time, index);
+  });
+
+  return graphData.headers.slice(1).map((header, channelIndex) => {
+    const channelData = graphData.chartData[channelIndex + 1] ?? [];
+    const values = fallbackIndexes.map((fallbackIndex, valueIndex) => {
+      const unixTime = unixTimes[valueIndex];
+      const matchingIndex =
+        unixTime === undefined ? undefined : timeIndexes.get(unixTime);
+      return channelData[matchingIndex ?? fallbackIndex] ?? "";
+    });
+
+    return { header, values };
+  });
+}
+
+function valuesBetweenTimes(
+  graphData: GraphDataRecord,
+  startSeconds: number,
+  endSeconds: number,
+) {
+  const timeData = graphData.chartData[0] ?? [];
+
+  return graphData.headers.slice(1).map((header, channelIndex) => {
+    const channelData = graphData.chartData[channelIndex + 1] ?? [];
+    const values = timeData.flatMap((unixSeconds, sampleIndex) => {
+      const sampleSeconds = timeOfDaySeconds(unixSeconds);
+
+      if (sampleSeconds < startSeconds || sampleSeconds > endSeconds) {
+        return [];
+      }
+
+      return [channelData[sampleIndex] ?? ""];
+    });
+
+    return { header, values };
+  });
+}
+
+function downloadSpikeRow(
+  row: SpikeRow,
+  primaryGraphData: GraphDataRecord | undefined,
+  additionalGraphs: AdditionalGraphExport[],
+) {
+  const primaryTimeData = primaryGraphData?.chartData[0] ?? [];
+  const csvRows = row.values.map((spikeValues, spikeIndex) => {
+    const sampleIndexes = row.times[spikeIndex] ?? [];
+    const isManualSpike =
+      spikeValues.length === 0 && sampleIndexes.length === 2;
+    const csvRow: Record<string, string | number> = {
+      channel: row.channel,
+      spikeIndex: spikeIndex + 1,
+      duration: row.durations[spikeIndex] ?? "",
+      startTime: row.startTimes[spikeIndex] ?? "",
+      values: spikeValues.join(", "),
+    };
+
+    additionalGraphs.forEach(({ label, data }) => {
+      const seriesValues = isManualSpike
+        ? valuesBetweenTimes(data, sampleIndexes[0], sampleIndexes[1])
+        : valuesAtTimes(
+            data,
+            sampleIndexes.map((sampleIndex) => primaryTimeData[sampleIndex]),
+            sampleIndexes,
+          );
+
+      seriesValues.forEach(({ header, values }) => {
+        csvRow[`${label} (${header})`] = values.join(", ");
+      });
+    });
+
+    return csvRow;
+  });
 
   const csv = Papa.unparse(csvRows);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -67,35 +156,9 @@ function downloadSpikeRow(row: SpikeRow) {
 
 const columnHelper = createColumnHelper<SpikeRow>();
 
-const columns = [
-  columnHelper.accessor("channel", {
-    header: "Channel",
-    cell: (info) => info.getValue(),
-  }),
-  columnHelper.accessor("spikeNum", {
-    header: "Number of Spikes",
-    cell: (info) => info.getValue(),
-  }),
-  columnHelper.display({
-    id: "download",
-    header: "Download",
-    cell: ({ row }) => (
-      <Button
-        aria-label={`Download ${row.original.channel} spikes as CSV`}
-        disabled={row.original.spikeNum === 0}
-        onClick={() => downloadSpikeRow(row.original)}
-        size="sm"
-        type="button"
-      >
-        <Download />
-        CSV
-      </Button>
-    ),
-  }),
-];
-
 function SpikePanel({ props }: { props: IDockviewPanelProps }) {
   const graphPanels = useAtomValue(graphPanelsAtom);
+  const graphDataByGraphPanel = useAtomValue(graphDataByGraphPanelAtom);
   const [selectedGraphPanelId, setSelectedGraphPanelId] = useState<string>("");
   const [spikeGroupsByGraphPanel, setSpikeGroupsByGraphPanel] = useAtom(
     spikeGroupsByGraphPanelAtom,
@@ -107,6 +170,15 @@ function SpikePanel({ props }: { props: IDockviewPanelProps }) {
     () => spikeGroupsByGraphPanel[selectedGraphPanelId] ?? [],
     [selectedGraphPanelId, spikeGroupsByGraphPanel],
   );
+  const selectedGraphData = graphDataByGraphPanel[selectedGraphPanelId];
+  const additionalGraphs = useMemo<AdditionalGraphExport[]>(() => {
+    return Object.entries(selectedGraphData?.additional ?? {})
+      .filter(([, data]) => data.chartData.length > 1)
+      .map(([, data], index) => ({
+        label: `Graph ${index + 2}`,
+        data,
+      }));
+  }, [selectedGraphData?.additional]);
 
   useEffect(() => {
     if (!selectedGraphPanelId && graphPanels.length > 0) {
@@ -141,6 +213,42 @@ function SpikePanel({ props }: { props: IDockviewPanelProps }) {
       startTimes: group.startTimes,
     }));
   }, [spikeGroups]);
+
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("channel", {
+        header: "Channel",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor("spikeNum", {
+        header: "Number of Spikes",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.display({
+        id: "download",
+        header: "Download",
+        cell: ({ row }) => (
+          <Button
+            aria-label={`Download ${row.original.channel} spikes as CSV`}
+            disabled={row.original.spikeNum === 0}
+            onClick={() =>
+              downloadSpikeRow(
+                row.original,
+                selectedGraphData?.primary,
+                additionalGraphs,
+              )
+            }
+            size="sm"
+            type="button"
+          >
+            <Download />
+            CSV
+          </Button>
+        ),
+      }),
+    ],
+    [additionalGraphs, selectedGraphData?.primary],
+  );
 
   const spikeDetailRows = useMemo<SpikeDetailRow[]>(() => {
     return spikeGroups.flatMap((group, groupIndex) =>

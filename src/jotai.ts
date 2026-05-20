@@ -14,7 +14,22 @@ export type GraphPanelRecord = {
   name: string;
 };
 
+export type GraphDataRecord = {
+  chartData: number[][];
+  headers: string[];
+};
+
 export const graphPanelsAtom = atom<GraphPanelRecord[]>([]);
+
+export const graphDataByGraphPanelAtom = atom<
+  Record<
+    string,
+    {
+      primary?: GraphDataRecord;
+      additional: Record<string, GraphDataRecord>;
+    }
+  >
+>({});
 
 export const spikeGroupsByGraphPanelAtom = atom<Record<string, SpikeGroup[]>>(
   {},
@@ -53,6 +68,12 @@ export const removeGraphPanelAtom = atom(null, (get, set, panelId: string) => {
     const nextChannelsByPanel = { ...currentChannelsByPanel };
     delete nextChannelsByPanel[panelId];
     return nextChannelsByPanel;
+  });
+
+  set(graphDataByGraphPanelAtom, (currentDataByPanel) => {
+    const nextDataByPanel = { ...currentDataByPanel };
+    delete nextDataByPanel[panelId];
+    return nextDataByPanel;
   });
 
   const manualSelection = get(manualSpikeSelectionAtom);
