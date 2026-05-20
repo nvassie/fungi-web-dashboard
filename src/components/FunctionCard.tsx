@@ -179,8 +179,9 @@ function FunctionCard({ id }: FunctionCardProps) {
                 <DialogHeader>
                   <DialogTitle>Add Function</DialogTitle>
                   <DialogDescription>
-                    Your custom function must return the indices of the values
-                    of input (all the graph data).
+                    Your custom function must return the array of transformed
+                    data that is the same length of the values of the provided
+                    input (all the graph data).
                   </DialogDescription>
                 </DialogHeader>
                 <Label>Function format:</Label>
