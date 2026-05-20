@@ -37,6 +37,31 @@ export const availableSpikeChannelsByGraphPanelAtom = atom<
 
 export const availableSpikeChannelsAtom = atom<string[]>([]);
 
+export const removeGraphPanelAtom = atom(null, (get, set, panelId: string) => {
+  set(
+    graphPanelsAtom,
+    get(graphPanelsAtom).filter((panel) => panel.id !== panelId),
+  );
+
+  set(spikeGroupsByGraphPanelAtom, (currentGroupsByPanel) => {
+    const nextGroupsByPanel = { ...currentGroupsByPanel };
+    delete nextGroupsByPanel[panelId];
+    return nextGroupsByPanel;
+  });
+
+  set(availableSpikeChannelsByGraphPanelAtom, (currentChannelsByPanel) => {
+    const nextChannelsByPanel = { ...currentChannelsByPanel };
+    delete nextChannelsByPanel[panelId];
+    return nextChannelsByPanel;
+  });
+
+  const manualSelection = get(manualSpikeSelectionAtom);
+
+  if (manualSelection.graphPanelId === panelId) {
+    set(manualSpikeSelectionAtom, { enabled: false });
+  }
+});
+
 export const userSpikeFunctionsAtom = atomWithStorage<
   { name: string; code: string }[]
 >("functions", [

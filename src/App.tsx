@@ -13,9 +13,9 @@ import AddPanels from "./components/AddPanels";
 import UserSettingsPanel from "./components/panels/UserSettingsPanel";
 import { useEffect, useRef, useState } from "react";
 import SpikePanel from "./components/panels/SpikePanel";
-import { DevTools } from "jotai-devtools";
-import "jotai-devtools/styles.css";
 import { v4 as uuidv4 } from "uuid";
+import { useSetAtom } from "jotai";
+import { removeGraphPanelAtom } from "./jotai";
 
 const components = {
   default: (props: IDockviewPanelProps) => {
@@ -55,9 +55,21 @@ const LeftComponent = (props: IDockviewHeaderActionsProps) => {
 
 export default function App() {
   const dockviewRef = useRef<DockviewApi | null>(null);
+  const removePanelDisposableRef = useRef<{ dispose: () => void } | null>(null);
+  const removeGraphPanel = useSetAtom(removeGraphPanelAtom);
 
   const onReady = (event: DockviewReadyEvent) => {
     dockviewRef.current = event.api;
+    removePanelDisposableRef.current?.dispose();
+    removePanelDisposableRef.current = event.api.onDidRemovePanel((panel) => {
+      const panelId = panel.id;
+
+      queueMicrotask(() => {
+        if (!event.api.getPanel(panelId)) {
+          removeGraphPanel(panelId);
+        }
+      });
+    });
 
     const saved = localStorage.getItem("layout");
 
@@ -74,6 +86,12 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      removePanelDisposableRef.current?.dispose();
+    };
+  }, []);
+
   const saveLayout = () => {
     if (!dockviewRef.current) {
       return;
@@ -84,20 +102,17 @@ export default function App() {
   };
 
   return (
-    <>
-      {/* <DevTools /> */}
-      <div className="App h-screen flex flex-col overflow-hidden">
-        <TopBar saveLayout={saveLayout} />
+    <div className="App h-screen flex flex-col overflow-hidden">
+      <TopBar saveLayout={saveLayout} />
 
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <DockviewReact
-            className="dockview-theme-dark h-full"
-            onReady={onReady}
-            components={components}
-            leftHeaderActionsComponent={LeftComponent}
-          />
-        </div>
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <DockviewReact
+          className="dockview-theme-dark h-full"
+          onReady={onReady}
+          components={components}
+          leftHeaderActionsComponent={LeftComponent}
+        />
       </div>
-    </>
+    </div>
   );
 }
