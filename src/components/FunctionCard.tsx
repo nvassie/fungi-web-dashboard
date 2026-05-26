@@ -86,35 +86,37 @@ function FunctionCard({ id }: FunctionCardProps) {
                             onChange={(e) => setEditCode(e.target.value)}
                           />
                           <div className="flex justify-end gap-2">
-                            <Button
-                              onClick={() => {
-                                setUserCustomFunctionGroups((prev) =>
-                                  prev.map((group) =>
-                                    group.id === id
-                                      ? {
-                                          ...group,
-                                          content: {
-                                            ...group.content,
-                                            functions:
-                                              group.content.functions.map(
-                                                (prevFunc) =>
-                                                  prevFunc.name === func.name
-                                                    ? {
-                                                        ...prevFunc,
-                                                        code: editCode,
-                                                      }
-                                                    : prevFunc,
-                                              ),
-                                          },
-                                        }
-                                      : group,
-                                  ),
-                                );
-                                setEditCode("");
-                              }}
-                            >
-                              Confirm
-                            </Button>
+                            <DialogClose asChild>
+                              <Button
+                                onClick={() => {
+                                  setUserCustomFunctionGroups((prev) =>
+                                    prev.map((group) =>
+                                      group.id === id
+                                        ? {
+                                            ...group,
+                                            content: {
+                                              ...group.content,
+                                              functions:
+                                                group.content.functions.map(
+                                                  (prevFunc) =>
+                                                    prevFunc.name === func.name
+                                                      ? {
+                                                          ...prevFunc,
+                                                          code: editCode,
+                                                        }
+                                                      : prevFunc,
+                                                ),
+                                            },
+                                          }
+                                        : group,
+                                    ),
+                                  );
+                                  setEditCode("");
+                                }}
+                              >
+                                Confirm
+                              </Button>
+                            </DialogClose>
                             <DialogClose asChild>
                               <Button variant="outline">Cancel</Button>
                             </DialogClose>
@@ -138,29 +140,31 @@ function FunctionCard({ id }: FunctionCardProps) {
                           <DialogTitle>Remove {func.name}</DialogTitle>
                         </DialogHeader>
                         <div className="flex justify-end gap-2">
-                          <Button
-                            onClick={() =>
-                              setUserCustomFunctionGroups((prev) =>
-                                prev.map((group) =>
-                                  group.id === id
-                                    ? {
-                                        ...group,
-                                        content: {
-                                          ...group.content,
-                                          functions:
-                                            group.content.functions.filter(
-                                              (prevFunc) =>
-                                                prevFunc.name !== func.name,
-                                            ),
-                                        },
-                                      }
-                                    : group,
-                                ),
-                              )
-                            }
-                          >
-                            Confirm
-                          </Button>
+                          <DialogClose asChild>
+                            <Button
+                              onClick={() =>
+                                setUserCustomFunctionGroups((prev) =>
+                                  prev.map((group) =>
+                                    group.id === id
+                                      ? {
+                                          ...group,
+                                          content: {
+                                            ...group.content,
+                                            functions:
+                                              group.content.functions.filter(
+                                                (prevFunc) =>
+                                                  prevFunc.name !== func.name,
+                                              ),
+                                          },
+                                        }
+                                      : group,
+                                  ),
+                                )
+                              }
+                            >
+                              Confirm
+                            </Button>
+                          </DialogClose>
                           <DialogClose asChild>
                             <Button variant="outline">Cancel</Button>
                           </DialogClose>
@@ -201,33 +205,35 @@ function FunctionCard({ id }: FunctionCardProps) {
                   value={addFunctionCode}
                   onChange={(e) => setAddFunctionCode(e.target.value)}
                 />
-                <Button
-                  onClick={() => {
-                    setUserCustomFunctionGroups((prev) =>
-                      prev.map((group) =>
-                        group.id === id
-                          ? {
-                              ...group,
-                              content: {
-                                ...group.content,
-                                functions: [
-                                  ...group.content.functions,
-                                  {
-                                    name: addFunctionName,
-                                    code: addFunctionCode,
-                                  },
-                                ],
-                              },
-                            }
-                          : group,
-                      ),
-                    );
-                    setAddFunctionCode("");
-                    setAddFunctionName("");
-                  }}
-                >
-                  Save Code
-                </Button>
+                <DialogClose asChild>
+                  <Button
+                    onClick={() => {
+                      setUserCustomFunctionGroups((prev) =>
+                        prev.map((group) =>
+                          group.id === id
+                            ? {
+                                ...group,
+                                content: {
+                                  ...group.content,
+                                  functions: [
+                                    ...group.content.functions,
+                                    {
+                                      name: addFunctionName,
+                                      code: addFunctionCode,
+                                    },
+                                  ],
+                                },
+                              }
+                            : group,
+                        ),
+                      );
+                      setAddFunctionCode("");
+                      setAddFunctionName("");
+                    }}
+                  >
+                    Save Code
+                  </Button>
+                </DialogClose>
               </DialogContent>
             </Dialog>
           </CardContent>

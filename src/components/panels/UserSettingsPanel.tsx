@@ -85,19 +85,22 @@ export default function UserSettingsPanel() {
                             onChange={(e) => setEditCode(e.target.value)}
                           />
                           <div className="flex justify-end gap-2">
-                            <Button
-                              onClick={() => {
-                                setSpikeUserFunctions((prev) => [
-                                  ...prev.filter(
-                                    (prevFuncs) => prevFuncs.name !== func.name,
-                                  ),
-                                  { name: func.name, code: editCode },
-                                ]);
-                                setEditCode("");
-                              }}
-                            >
-                              Confirm
-                            </Button>
+                            <DialogClose asChild>
+                              <Button
+                                onClick={() => {
+                                  setSpikeUserFunctions((prev) => [
+                                    ...prev.filter(
+                                      (prevFuncs) =>
+                                        prevFuncs.name !== func.name,
+                                    ),
+                                    { name: func.name, code: editCode },
+                                  ]);
+                                  setEditCode("");
+                                }}
+                              >
+                                Confirm
+                              </Button>
+                            </DialogClose>
                             <DialogClose asChild>
                               <Button variant="outline">Cancel</Button>
                             </DialogClose>
@@ -122,17 +125,19 @@ export default function UserSettingsPanel() {
                             <DialogTitle>Remove {func.name}</DialogTitle>
                           </DialogHeader>
                           <div className="flex justify-end gap-2">
-                            <Button
-                              onClick={() =>
-                                setSpikeUserFunctions((prev) =>
-                                  prev.filter(
-                                    (prevFns) => prevFns.name !== func.name,
-                                  ),
-                                )
-                              }
-                            >
-                              Confirm
-                            </Button>
+                            <DialogClose asChild>
+                              <Button
+                                onClick={() =>
+                                  setSpikeUserFunctions((prev) =>
+                                    prev.filter(
+                                      (prevFns) => prevFns.name !== func.name,
+                                    ),
+                                  )
+                                }
+                              >
+                                Confirm
+                              </Button>
+                            </DialogClose>
                             <DialogClose asChild>
                               <Button variant="outline">Cancel</Button>
                             </DialogClose>
@@ -175,18 +180,20 @@ export default function UserSettingsPanel() {
                   value={addFunctionCode}
                   onChange={(e) => setAddFunctionCode(e.target.value)}
                 />
-                <Button
-                  onClick={() => {
-                    setSpikeUserFunctions((prev) => [
-                      ...prev,
-                      { name: addFunctionName, code: addFunctionCode },
-                    ]);
-                    setAddFunctionCode("");
-                    setAddFunctionName("");
-                  }}
-                >
-                  Save Code
-                </Button>
+                <DialogClose asChild>
+                  <Button
+                    onClick={() => {
+                      setSpikeUserFunctions((prev) => [
+                        ...prev,
+                        { name: addFunctionName, code: addFunctionCode },
+                      ]);
+                      setAddFunctionCode("");
+                      setAddFunctionName("");
+                    }}
+                  >
+                    Save Code
+                  </Button>
+                </DialogClose>
               </DialogContent>
             </Dialog>
           </CardContent>
@@ -209,30 +216,32 @@ export default function UserSettingsPanel() {
                 value={addFunctionGroupName}
                 onChange={(e) => setAddFunctionGroupName(e.target.value)}
               />
-              <Button
-                onClick={() => {
-                  setUserCustomFunctionGroups((prev) => [
-                    ...prev,
-                    {
-                      id: addFunctionGroupName,
-                      content: {
-                        groupName: addFunctionGroupName,
-                        functions: [],
+              <DialogClose asChild>
+                <Button
+                  onClick={() => {
+                    setUserCustomFunctionGroups((prev) => [
+                      ...prev,
+                      {
+                        id: addFunctionGroupName,
+                        content: {
+                          groupName: addFunctionGroupName,
+                          functions: [],
+                        },
                       },
-                    },
-                  ]);
-                  setUserCustomFunctionsRunOrder((prev) => [
-                    ...prev,
-                    {
-                      type: addFunctionGroupName,
-                      functionName: "None",
-                    },
-                  ]);
-                  setAddFunctionGroupName("");
-                }}
-              >
-                Add function group
-              </Button>
+                    ]);
+                    setUserCustomFunctionsRunOrder((prev) => [
+                      ...prev,
+                      {
+                        type: addFunctionGroupName,
+                        functionName: "None",
+                      },
+                    ]);
+                    setAddFunctionGroupName("");
+                  }}
+                >
+                  Add function group
+                </Button>
+              </DialogClose>
             </DialogHeader>
           </DialogContent>
         </Dialog>
