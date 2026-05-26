@@ -72,7 +72,7 @@ export default function UserSettingsPanel() {
                             <Pencil />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto]">
                           <DialogHeader>
                             <DialogTitle>Edit {func.name}</DialogTitle>
                             <DialogDescription>
@@ -80,7 +80,7 @@ export default function UserSettingsPanel() {
                             </DialogDescription>
                           </DialogHeader>
                           <Textarea
-                            className="min-h-48 font-mono text-sm"
+                            className="min-h-48 min-w-0 overflow-y-auto font-mono text-sm [field-sizing:fixed]"
                             value={editCode}
                             onChange={(e) => setEditCode(e.target.value)}
                           />
