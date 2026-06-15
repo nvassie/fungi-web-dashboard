@@ -156,11 +156,10 @@ export default function UserSettingsPanel() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add Function</DialogTitle>
-                  <DialogDescription>
-                    Your spike detecting function must return the indices of the
-                    values of input (all the graph data) that are determined to
-                    be part of a spike in an array. The rest of the processing
-                    will be handled by the dashboard.
+                  <DialogDescription className="whitespace-pre-line">
+                    {`Your spike detecting function must return the indices of the values of the input array that are determined to be part of a spike in an array. The rest of the processing will be handled by the dashboard.
+                    
+                    e.g. an input array [1,2,1,10,15,12,1,3] might return a spike array [3,4,5].`}
                   </DialogDescription>
                 </DialogHeader>
                 <Label>Function format:</Label>
