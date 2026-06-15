@@ -14,22 +14,40 @@ A browser-based dashboard for uploading electrical signal recordings, visualisin
 
 ## Prerequisites
 
-Install Node.js and npm. This project uses Vite 7, so use a recent Node.js version, preferably Node 20.19+ or Node 22.12+.
+Install Node.js and npm or pnpm. This project uses Vite 7, so use a recent Node.js version, preferably Node 20.19+ or Node 22.12+. Additionally, pnpm has been used as the package manager for this project, so it is recommended to be used.
 
 Check your versions:
 
 ```bash
 node --version
 npm --version
+
+# optional: check pnpm
+pnpm --version
+```
+
+If you want to use pnpm, install it with:
+
+```bash
+npm install -g pnpm
 ```
 
 ## Getting started
 
 From the project directory:
 
+Using npm:
+
 ```bash
 npm install
 npm run dev
+```
+
+Or using pnpm:
+
+```bash
+pnpm install
+pnpm dev
 ```
 
 Vite will print a local development URL, usually:
@@ -44,24 +62,32 @@ Open that URL in your browser to use the dashboard.
 
 ```bash
 npm run dev
+# or
+pnpm dev
 ```
 
 Starts the local development server with hot-module reload.
 
 ```bash
 npm run build
+# or
+pnpm build
 ```
 
 Runs the TypeScript build and creates a production build in `dist/`.
 
 ```bash
 npm run preview
+# or
+pnpm preview
 ```
 
 Serves the production build locally for previewing.
 
 ```bash
 npm run lint
+# or
+pnpm lint
 ```
 
 Runs ESLint over the project.
@@ -208,9 +234,18 @@ Custom functions are executed in the browser using dynamically created JavaScrip
 
 Make sure you are using a recent Node.js version. If issues persist, delete `node_modules` and reinstall:
 
+Using npm:
+
 ```bash
 rm -rf node_modules package-lock.json
 npm install
+```
+
+Using pnpm:
+
+```bash
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
 ```
 
 ### The dashboard opens but no data appears
@@ -229,4 +264,4 @@ Try a different detection function or adjust the rolling window and threshold in
 
 ### Saved layout looks wrong
 
-Open the browser developer tools and clear local storage for the site, or use the app's **Clear Data** controls for individual graph panels.
+Open the browser developer tools and clear local storage for the site.
