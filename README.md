@@ -14,7 +14,7 @@ A browser-based dashboard for uploading electrical signal recordings, visualisin
 
 ## Prerequisites
 
-Install Node.js and npm or pnpm. This project uses Vite 7, so use a recent Node.js version, preferably Node 20.19+ or Node 22.12+. Additionally, pnpm has been used as the package manager for this project, so it is recommended to be used.
+Install Node.js and npm or pnpm. This project uses Vite 7, so use a recent Node.js version, preferably Node 20.19+ or Node 22.12+. **Additionally, pnpm has been used as the package manager for this project, so it is recommended to be used.**
 
 Check your versions:
 
@@ -246,6 +246,32 @@ Using pnpm:
 ```bash
 rm -rf node_modules pnpm-lock.yaml
 pnpm install
+```
+
+### npm warnings
+
+If a vulnerabilites is displayed when running `npm install`, run npm audit fix --force to fix vulnerabilites.
+
+```bash
+added 585 packages, and audited 586 packages in 43s 78 
+
+packages are looking for funding run 
+npm fund for details 
+
+4 vulnerabilities (2 moderate, 2 high) 
+
+To address all issues (including breaking changes), run:    npm audit fix --force 
+
+Run npm audit for details.
+```
+If an allow-scripts warning is displayed when running `npm install`, consider running the commands provided in the warning or using pnpm, otherwise the dashboard might not work as intended.
+
+```bash
+npm warn allow-scripts 2 packages have install scripts not yet covered by allowScripts: 
+npm warn allow-scripts es5-ext@0.10.64 (postinstall: node -e "try{require('./_postinstall')}catch(e){}" || exit 0) 
+npm warn allow-scripts esbuild@0.27.7 (postinstall: node install.js) 
+npm warn allow-scripts 
+npm warn allow-scripts Run npm approve-scripts --allow-scripts-pending to review, or npm approve-scripts <pkg> to allow.
 ```
 
 ### The dashboard opens but no data appears
