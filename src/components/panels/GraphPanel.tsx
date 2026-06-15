@@ -23,7 +23,7 @@ import Upload from "@/components/Upload";
 import {
   buildAutomaticSpikeGraphData,
   buildManualSpikeGraphData,
-} from "@/lib/ManualSpikeGraph";
+} from "@/lib/manualSpikeGraph";
 import { parser } from "@/lib/parsers";
 import {
   Select,

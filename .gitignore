@@ -27,3 +27,4 @@ public
 pnpm-lock.yaml
 node_modules
 .vite
+package-lock.json
