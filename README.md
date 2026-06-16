@@ -291,3 +291,7 @@ Try a different detection function or adjust the rolling window and threshold in
 ### Saved layout looks wrong
 
 Open the browser developer tools and clear local storage for the site.
+
+### Reference
+
+OpenAI. “ChatGPT conversation: Dashboard README Creation,” ChatGPT. Accessed: Jun. 16, 2026. [Online]. Available: https://chatgpt.com/share/6a3096ff-b2bc-83ec-af6e-6dcbdaf32c73
