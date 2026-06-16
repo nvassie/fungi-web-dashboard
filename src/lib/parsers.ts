@@ -5,7 +5,7 @@ export function parser(
   fileContent: string,
   fileInfo: FileInfo,
   headers: string[],
-  setHeaders,
+  setHeaders: React.Dispatch<React.SetStateAction<string[]>>,
 ) {
   if (fileInfo.extension === ".lvm") {
     const parsedData = lvmParser(fileContent, fileInfo, headers, setHeaders);
@@ -22,7 +22,7 @@ function lvmParser(
   fileContent: string,
   fileInfo: FileInfo,
   headers: string[],
-  setHeaders,
+  setHeaders: React.Dispatch<React.SetStateAction<string[]>>,
 ) {
   const columns: number[][] = [];
   const lines = fileContent.split(/\r?\n/);
@@ -63,7 +63,11 @@ function lvmParser(
   return columns;
 }
 
-function csvParser(fileContent: string, fileInfo: FileInfo, setHeaders) {
+function csvParser(
+  fileContent: string,
+  fileInfo: FileInfo,
+  setHeaders: React.Dispatch<React.SetStateAction<string[]>>,
+) {
   const columns: number[][] = [];
   const lines = fileContent.split(/\r?\n/);
 
@@ -94,6 +98,5 @@ function csvParser(fileContent: string, fileInfo: FileInfo, setHeaders) {
   const times = intervalData.map((delta) => (t += delta));
   columns[0] = times;
 
-  console.log(columns);
   return columns;
 }
